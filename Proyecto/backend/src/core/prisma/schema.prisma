@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phoneNumber String @unique
+  role Role
+  password  String
+  birthDate DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  PaymentMethod PaymentMethod[]
+  Calification Calification[]
+  Passenger Passenger[]
+  Driver Driver[]
+}
+
+model PaymentMethod {
+  id        String   @id @default(cuid())
+  cardNumber String? 
+  cardHolder String?
+  expirationDate DateTime?
+  bank Int?
+  bankNumber String?
+  type PaymentType
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User User @relation(fields: [userId], references: [id])
+  userId String
+  Bill Bill[]
+}
+
+model Calification {
+  id        String   @id @default(cuid())
+  score Int
+  comment String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User User @relation(fields: [userId], references: [id])
+  userId String
+}
+
+model Trip {
+  id        String   @id @default(cuid())
+  origin String
+  destination String
+  departureDate DateTime
+  beginDate DateTime
+  endDate DateTime
+  passengers Passenger[]
+  status TripStatus
+  driver Driver @relation(fields: [driverId], references: [id])
+  driverId String
+  price Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Bill Bill[]
+}
+
+model Passenger {
+  user User @relation(fields: [userId], references: [id])
+  userId String
+  Trip Trip @relation(fields: [tripId], references: [id])
+  tripId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@id([userId, tripId])
+}
+
+model Bill {
+  id       String   @id @default(cuid())
+  amount Int
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  PaymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  paymentMethodId String
+  Trip Trip @relation(fields: [tripId], references: [id])
+  tripId String
+}
+
+model Driver {
+  id        String   @id @default(cuid())
+  runtNumber String @unique
+  licenseExpirationDate DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User User @relation(fields: [id], references: [id])
+  Trip Trip[]
+}
+
+enum Role {
+  ADMIN
+  USER 
+  DRIVER
+}
+
+enum PaymentType {
+  CREDIT
+  DEBIT
+  PSE
+  BANKDEPOSIT
+  CASH
+}
+
+enum TripStatus {
+  PENDING
+  CANCELLED
+  COMPLETED
+  ONGOING
+}
