@@ -5,4 +5,4 @@ Para poder manipular los frameworks usar los siguientes comandos en consola:
 -- cd Proyecto/backend
 -- code .
 
-Asi las modificaciones estaran en ka carpeta backend. Analogo para frontend.
+Asi las modificaciones estaran en la carpeta backend. Analogo para frontend.
