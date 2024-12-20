@@ -1,10 +1,10 @@
 # Repositorio grupal - Ingeniería de software 1 - 2024-2
 
 ## Integrantes del equipo
-- **Integrante 1**: Daniel Aguilar Castro  
-- **Integrante 2**: Diego Felipe Solorzano Aponte
-- **Integrante 3**: Juan David Chacon Munoz  
-- **Integrante 4**: Juan David Loaiza Reyes  
+- **Integrante 1**: Daniel Aguilar Castro <a> https://github.com/DIEG0FELIPE </a>
+- **Integrante 2**: Diego Felipe Solorzano Aponte  <a> https://github.com/DIEG0FELIPE </a>
+- **Integrante 3**: Juan David Chacon Munoz  <a>https://github.com/Juan1747</a>
+- **Integrante 4**: Juan David Loaiza Reyes <a>https://github.com/juanloaiza21</a>  
 
 ## Nombre del Proyecto
 **Owheels** 
