@@ -13,11 +13,12 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from 'src/core/guard/jwt-auth.guard';
 // import { UpdateUserDto } from './dto/update-user.dto';
-@UseGuards(JwtAuthGuard)
+
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   getUsers() {
     return this.usersService.getUsers();
@@ -28,11 +29,13 @@ export class UsersController {
     return this.usersService.createUser(user);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   deleteUser(@Param('id') id: string) {
     return this.usersService.deleteUserById(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   updateUser(@Param('id') id: string, @Body() updatedFields: UpdateUserDto) {
     return this.usersService.updateUserById(id, updatedFields);

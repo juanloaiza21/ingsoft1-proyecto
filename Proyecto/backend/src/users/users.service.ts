@@ -2,19 +2,21 @@ import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from '../core/prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UtilsService } from '@app/utils';
 
-/**
- * @todo Use Bcrypt to hash the password before saving it to the database
- */
 @Injectable()
 export class UsersService {
   logger: Logger;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private utilsService: UtilsService,
+  ) {
     this.logger = new Logger('UsersService');
   }
 
   async createUser(user: CreateUserDto) {
+    user.password = await this.utilsService.hashPassword(user.password);
     try {
       return await this.prisma.user.create({
         data: {
@@ -96,6 +98,7 @@ export class UsersService {
           role: updatedData.role,
           password: updatedData.password,
           birthDate: updatedData.birthDate,
+          refreshToken: updatedData.refreshToken,
         },
       });
     } catch (error) {
