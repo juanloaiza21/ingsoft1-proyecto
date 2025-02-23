@@ -10,7 +10,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from '../guard/jwt-auth.guard';
+import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { SignInDTO } from './dto/singin.dto';
 import { RtGuard } from './guard/jwt-refresh.guard';
 

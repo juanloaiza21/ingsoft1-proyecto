@@ -6,6 +6,8 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './core/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './core/config/configuration';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ResponseInterceptor } from './core/response/response.interceptor';
 
 @Module({
   imports: [
@@ -15,6 +17,9 @@ import configuration from './core/config/configuration';
     ConfigModule.forRoot({ load: [configuration] }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
+  ],
 })
 export class AppModule {}
