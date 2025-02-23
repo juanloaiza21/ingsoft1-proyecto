@@ -1,8 +1,18 @@
 import { UserRole } from '../entities/user.entity';
-import { IsString, IsEmail, IsEnum, IsDate, IsNotEmpty } from 'class-validator';  
+import {
+  IsString,
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsDateString,
+  IsNumber,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateUserDto {
+  @IsNumber()
+  id: number;
+
   @IsString()
   @IsNotEmpty()
   name: string;
@@ -22,7 +32,6 @@ export class CreateUserDto {
   @IsNotEmpty()
   password: string;
 
-  @IsDate()
-  @Transform(({ value }) => new Date(value)) // Convierte el valor recibido a una instancia de Date
-  birthDate: Date;
+  @IsDateString()
+  birthDate: string;
 }
