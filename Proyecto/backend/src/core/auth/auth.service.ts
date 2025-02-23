@@ -67,26 +67,41 @@ export class AuthService {
   }
 
   async refreshTokens(refreshToken: string): Promise<Tokens> {
-    const payload: Payload = await this.jwtService.verifyAsync(refreshToken, {
-      secret: this.configService.get('JWT_SECRET_REFRESH'),
-    });
-    const user = await this.usersService.findOneByemail(payload.email);
-    if (!user) {
+    try {
+      const payload: Payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.get('JWT_SECRET_REFRESH'),
+      });
+      const user = await this.usersService.findOneByemail(payload.email);
+      if (!user) {
+        throw new UnauthorizedException();
+      }
+      const validation = await this.utils.comparePassword(
+        refreshToken,
+        user.refreshToken,
+      );
+      if (!validation) {
+        throw new UnauthorizedException();
+      }
+      const tokens = await this.generateToken({
+        email: user.email,
+        sub: user.id,
+        role: user.role,
+      });
+      await this.updateRtHash(tokens.refresh_token, payload);
+      return tokens;
+    } catch (e) {
+      this.logger.error(e);
       throw new UnauthorizedException();
     }
-    const validation = await this.utils.comparePassword(
-      refreshToken,
-      user.refreshToken,
-    );
-    if (!validation) {
+  }
+
+  async logOut(user: string): Promise<void> {
+    try {
+      this.logger.log(user);
+      await this.usersService.updateUserById(user, { refreshToken: null });
+    } catch (error) {
+      this.logger.error(error);
       throw new UnauthorizedException();
     }
-    const tokens = await this.generateToken({
-      email: user.email,
-      sub: user.id,
-      role: user.role,
-    });
-    await this.updateRtHash(tokens.refresh_token, payload);
-    return tokens;
   }
 }
