@@ -8,6 +8,7 @@ import { ConfigModule } from '@nestjs/config';
 import configuration from './core/config/configuration';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ResponseInterceptor } from './core/response/response.interceptor';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ResponseInterceptor } from './core/response/response.interceptor';
     UsersModule,
     AuthModule,
     ConfigModule.forRoot({ load: [configuration] }),
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [
