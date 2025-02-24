@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { PaypalGen } from './types/paypal-gen.type';
+import { PaypalGen } from './types/paypal-gen.types';
 
 @Injectable()
 export class PaymentService {
