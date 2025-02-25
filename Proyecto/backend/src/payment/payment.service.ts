@@ -1,28 +1,73 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { PaypalGen } from './types/paypal-gen.types';
+import { PrismaService } from 'src/core/prisma/prisma.service';
+import { PaymentMethod } from './enum/payment.enum';
+import { GenerateBuyDTO } from './dto/genBuy.dto';
 
 @Injectable()
 export class PaymentService {
   private logger: Logger;
   private paypalToken: string;
-  private purchaseId: string;
   private readonly paypalUrl: string;
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prismaService: PrismaService,
+  ) {
     this.logger = new Logger('PaymentService');
     this.paypalToken = '';
     this.paypalUrl = this.configService.get('PAYPAL_API_URL');
   }
 
-  async genBuy(value: string) {
-    await this.generateAuth();
-    const order = this.createOrder(value);
-    const response = await this.makeRequest(order);
-
-    return response.links[1].href;
+  /**
+   * @todo implement payment method cash
+   */
+  async genBuy(payment: GenerateBuyDTO): Promise<string> {
+    try {
+      const { id, method, tripId, value } = payment;
+      if (method === PaymentMethod.CASH) return 'Cash payment';
+      await this.generateAuth();
+      const order = this.createOrder(value.toString());
+      const response = await this.makeRequest(order);
+      this.logger.log('Se hace la peticion');
+      await this.savePayment(response.id, method, +value, tripId);
+      this.logger.log('Se guarda el codigo');
+      return response.links[1].href;
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new HttpException('Something went wrong', HttpStatus.I_AM_A_TEAPOT);
+    }
   }
 
+  private async savePayment(
+    id: string,
+    method: PaymentMethod,
+    amount: number,
+    tripId: string,
+  ) {
+    try {
+      await this.prismaService.bill.create({
+        data: {
+          id,
+          amount,
+          paymenForm: method,
+          Trip: {
+            connect: {
+              id: tripId,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new HttpException('Something went wrong', HttpStatus.I_AM_A_TEAPOT);
+    }
+  }
+
+  /**
+   * @todo implement redirection routes
+   */
   private createOrder(value: string): Object {
     return {
       intent: 'CAPTURE',
