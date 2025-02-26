@@ -29,6 +29,8 @@ export class PaymentService {
       options: { timeout: 5000, idempotencyKey: 'abc' },
     });
     this.payment = new Payment(this.mercadopagoConfig);
+    this.pref = new Preference(this.mercadopagoConfig);
+    this.merchantOrder = new MerchantOrder(this.mercadopagoConfig);
   }
 
   async getPaymentMethods() {
@@ -57,8 +59,8 @@ export class PaymentService {
     }
   }
 
-  async createTripBillPreference(options: CreatePrefOptions) {
-    return this.pref.create({
+  generatePreferenceBody(options: CreatePrefOptions) {
+    return {
       body: {
         items: [
           {
@@ -71,16 +73,30 @@ export class PaymentService {
           },
         ],
         back_urls: {
-          success: this.configService.get('Host') + '/',
-          failure: this.configService.get('Host') + '/',
-          pending: this.configService.get('Host') + '/',
+          success: this.configService.get('host') + '/success',
+          failure: this.configService.get('host') + '/fail',
+          pending: this.configService.get('host') + '/pending',
         },
         payer: {
           email: options.userEmail,
         },
         external_reference: options.transactionId,
       },
-    });
+    };
+  }
+
+  async createTripBillPreference(options: CreatePrefOptions) {
+    try {
+      const data = this.generatePreferenceBody(options);
+      const { body } = data;
+      return (await this.pref.create({ body })).init_point;
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new HttpException(
+        'Error creating preference',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   async getPaymentById(id: string) {

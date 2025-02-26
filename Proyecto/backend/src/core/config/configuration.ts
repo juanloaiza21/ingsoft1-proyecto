@@ -11,4 +11,7 @@ export default () => ({
     publicKey: process.env.MERCADOPAGO_PUBLIC_KEY,
     accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
   },
+  host: process.env.HOST
+    ? process.env.HOST
+    : 'http://localhost:' + process.env.PORT,
 });
