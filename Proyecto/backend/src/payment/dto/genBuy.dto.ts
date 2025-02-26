@@ -1,26 +1,23 @@
-import {
-  IsString,
-  IsEnum,
-  IsNotEmpty,
-  IsNumber,
-  IsNumberString,
-} from 'class-validator';
-import { PaymentMethod } from '../enum/payment.enum';
+import { IsString, IsNotEmpty, IsNumber, IsEmail } from 'class-validator';
 
 export class GenerateBuyDTO {
   @IsString()
   @IsNotEmpty()
   id: string;
 
-  @IsEnum(PaymentMethod)
+  @IsString()
   @IsNotEmpty()
-  method: PaymentMethod;
+  method: string;
 
   @IsString()
   @IsNotEmpty()
   tripId: string;
 
-  @IsNumberString()
+  @IsNumber()
   @IsNotEmpty()
-  value: string;
+  value: number;
+
+  @IsString()
+  @IsEmail()
+  email: string;
 }

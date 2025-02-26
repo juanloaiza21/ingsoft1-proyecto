@@ -111,7 +111,7 @@ enum Role {
 
 enum PaymentType {
   CASH
-  PAYPAL
+  MERCADOPAGO
 }
 
 enum TripStatus {
