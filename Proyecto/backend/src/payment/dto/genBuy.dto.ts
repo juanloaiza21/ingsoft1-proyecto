@@ -3,10 +3,6 @@ import { IsString, IsNotEmpty, IsNumber, IsEmail } from 'class-validator';
 export class GenerateBuyDTO {
   @IsString()
   @IsNotEmpty()
-  id: string;
-
-  @IsString()
-  @IsNotEmpty()
   method: string;
 
   @IsString()

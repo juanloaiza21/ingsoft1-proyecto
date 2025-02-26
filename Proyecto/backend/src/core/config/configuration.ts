@@ -14,4 +14,5 @@ export default () => ({
   host: process.env.HOST
     ? process.env.HOST
     : 'http://localhost:' + process.env.PORT,
+  webhook: process.env.WEBHOOK_URL,
 });

@@ -10,6 +10,8 @@ import {
   MerchantOrder,
 } from 'mercadopago';
 import axios from 'axios';
+import { connect } from 'http2';
+import { BillStatus } from '@prisma/client';
 
 @Injectable()
 export class PaymentService {
@@ -59,7 +61,9 @@ export class PaymentService {
     }
   }
 
-  generatePreferenceBody(options: CreatePrefOptions) {
+  private generatePreferenceBody(options: CreatePrefOptions) {
+    options.transactionId =
+      options.transactionId + new Date().getTime() + options.userEmail;
     return {
       body: {
         items: [
@@ -73,9 +77,9 @@ export class PaymentService {
           },
         ],
         back_urls: {
-          success: this.configService.get('host') + '/success',
-          failure: this.configService.get('host') + '/fail',
-          pending: this.configService.get('host') + '/pending',
+          success: this.configService.get('host') + '/payment/result-payment',
+          failure: this.configService.get('host') + '/payment/result-payment',
+          pending: this.configService.get('host') + '/payment/result-payment',
         },
         payer: {
           email: options.userEmail,
@@ -85,11 +89,22 @@ export class PaymentService {
     };
   }
 
-  async createTripBillPreference(options: CreatePrefOptions) {
+  async createTripBillPreference(options: CreatePrefOptions, id: string) {
     try {
       const data = this.generatePreferenceBody(options);
       const { body } = data;
-      return (await this.pref.create({ body })).init_point;
+      const result = await this.pref.create({ body });
+      await this.createBill(
+        options.productId,
+        id,
+        options.productPrice,
+        body.external_reference,
+      );
+      return {
+        paylink: result.init_point,
+        billId: result.id,
+        externalId: result.external_reference,
+      };
     } catch (error) {
       this.logger.error(error.message);
       throw new HttpException(
@@ -99,16 +114,75 @@ export class PaymentService {
     }
   }
 
+  async getPrefByOrderId(id: string) {
+    try {
+      const result = await this.pref.get({
+        preferenceId: id,
+      });
+      return {
+        paylink: result.init_point,
+        billId: result.id,
+        externalId: result.external_reference,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw new HttpException('Error getting payment', 400);
+    }
+  }
+
+  private async createBill(
+    tripId: string,
+    userId: string,
+    amount: number,
+    paymentId: string,
+  ) {
+    try {
+      await this.prismaService.bill.create({
+        data: {
+          amount,
+          Trip: {
+            connect: { id: tripId },
+          },
+          User: {
+            connect: { id: userId },
+          },
+          paymenForm: 'MERCADOPAGO',
+          paymentId,
+          status: 'PENDING',
+        },
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to create bill: ${error.message}`);
+      throw new HttpException(
+        'Error creating bill',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async getPaymentById(id: string) {
-    return this.payment.get({ id });
+    try {
+      const data = await this.payment.get({ id });
+      const status: BillStatus =
+        data.status === 'approved' ? BillStatus.ACCEPTED : BillStatus.CANCELLED;
+      if (status != BillStatus.ACCEPTED)
+        throw new HttpException(
+          'Payment not approved',
+          HttpStatus.PAYMENT_REQUIRED,
+        );
+      await this.prismaService.bill.update({
+        where: {
+          paymentId: data.external_reference,
+        },
+        data: {
+          status: status,
+        },
+      });
+      return data.status;
+    } catch (error) {
+      this.logger.error(error);
+      throw new HttpException('Somenthing went wrong', 400);
+    }
   }
-
-  async getPrefByOrderId(id: number) {
-    const result = await this.merchantOrder.get({ merchantOrderId: id });
-    return this.pref.get({ preferenceId: result.preference_id });
-  }
-
-  async createBill() {}
-
-  async confirmPurchase() {}
 }
