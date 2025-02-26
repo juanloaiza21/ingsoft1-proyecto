@@ -10,14 +10,4 @@ export class PaymentController {
   async getPaymentMethods() {
     return await this.paymentService.getPaymentMethods();
   }
-
-  @Post('pay')
-  async generateBuy(@Body() generateBuyDTO: GenerateBuyDTO) {
-    return await this.paymentService.generateBuy(generateBuyDTO);
-  }
-
-  @Post('create-user')
-  async callback(@Body() { id }: { id: string }) {
-    return await this.paymentService.createCustomer(id);
-  }
 }

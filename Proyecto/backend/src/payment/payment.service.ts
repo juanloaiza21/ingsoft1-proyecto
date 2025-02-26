@@ -1,25 +1,23 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from 'src/core/prisma/prisma.service';
-import { PaymentMethod } from './enum/payment.enum';
 import { GenerateBuyDTO } from './dto/genBuy.dto';
+import { CreatePrefOptions } from './types/create-pref.type';
 import {
   MercadoPagoConfig,
   Payment,
-  Customer,
-  CustomerCard,
+  Preference,
+  MerchantOrder,
 } from 'mercadopago';
 import axios from 'axios';
-import { PaymentCreateData } from 'mercadopago/dist/clients/payment/create/types';
-import { CustomerCardCreateData } from 'mercadopago/dist/clients/customerCard/create/types';
 
 @Injectable()
 export class PaymentService {
   private logger: Logger;
   private readonly mercadopagoConfig: MercadoPagoConfig;
-  private readonly mercadopago: Payment;
-  private readonly customer: Customer;
-  private readonly customerCard: CustomerCard;
+  private readonly payment: Payment;
+  private readonly pref: Preference;
+  private readonly merchantOrder: MerchantOrder;
 
   constructor(
     private readonly configService: ConfigService,
@@ -30,30 +28,7 @@ export class PaymentService {
       accessToken: this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN'),
       options: { timeout: 5000, idempotencyKey: 'abc' },
     });
-    this.mercadopago = new Payment(this.mercadopagoConfig);
-    this.customer = new Customer(this.mercadopagoConfig);
-    this.customerCard = new CustomerCard(this.mercadopagoConfig);
-  }
-
-  async generateBuy(generateBuyDTO: GenerateBuyDTO) {
-    const { id, method, tripId, value, email } = generateBuyDTO;
-    try {
-      const body = this.generatePaymentBody(
-        value,
-        'Trip payment',
-        method,
-        email,
-      );
-      this.logger.log(body);
-      await this.mercadopago
-        .create(body)
-        .then((r) => this.logger.log(r))
-        .catch((e) => this.logger.error(e));
-      return 'jiji';
-    } catch (error) {
-      this.logger.error(error);
-      throw new HttpException('Error generating buy', 400);
-    }
+    this.payment = new Payment(this.mercadopagoConfig);
   }
 
   async getPaymentMethods() {
@@ -82,62 +57,42 @@ export class PaymentService {
     }
   }
 
-  private generatePaymentBody(
-    transaction_amount: number,
-    description: string,
-    payment_method_id: string,
-    email: string,
-  ): PaymentCreateData {
-    return {
+  async createTripBillPreference(options: CreatePrefOptions) {
+    return this.pref.create({
       body: {
-        transaction_amount,
-        description,
-        payment_method_id,
-        payer: {
-          email,
-        },
-      },
-      requestOptions: {},
-    };
-  }
-
-  async createCustomer(id: string) {
-    try {
-      const userData = await this.prismaService.user.findUnique({
-        where: { id },
-      });
-      if (!userData)
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      const data = await this.customer.create({
-        body: {
-          email: userData.email,
-          first_name: userData.name,
-          phone: { area_code: '57', number: userData.phoneNumber },
-          identification: {
-            type: 'CC',
-            number: userData.id,
+        items: [
+          {
+            id: options.productId,
+            title: options.productName,
+            description: options.productDescription,
+            quantity: 1,
+            currency_id: 'COP',
+            unit_price: options.productPrice,
           },
+        ],
+        back_urls: {
+          success: this.configService.get('Host') + '/',
+          failure: this.configService.get('Host') + '/',
+          pending: this.configService.get('Host') + '/',
         },
-      });
-      return { mpId: data.id };
-    } catch (error) {
-      this.logger.error(error.message);
-      throw new HttpException('Error creating customer', 400);
-    }
+        payer: {
+          email: options.userEmail,
+        },
+        external_reference: options.transactionId,
+      },
+    });
   }
 
-  async createCard(customerId: string, cardToken: string) {
-    try {
-      const body: CustomerCardCreateData = {
-        customerId,
-        body: {
-          token: cardToken,
-        },
-      };
-      await this.customerCard.create(body);
-    } catch (error) {
-      this.logger.error(error.message);
-      throw new HttpException('Error creating card', 400);
-    }
+  async getPaymentById(id: string) {
+    return this.payment.get({ id });
   }
+
+  async getPrefByOrderId(id: number) {
+    const result = await this.merchantOrder.get({ merchantOrderId: id });
+    return this.pref.get({ preferenceId: result.preference_id });
+  }
+
+  async createBill() {}
+
+  async confirmPurchase() {}
 }
