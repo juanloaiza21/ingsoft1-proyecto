@@ -7,8 +7,12 @@ export default () => ({
     secret: process.env.JWT_SECRET,
     refresh: process.env.JWT_SECRET_REFRESH,
   },
-  paypal: {
-    clientId: process.env.PAYPAL_CLIENT_ID,
-    clientSecret: process.env.PAYPAL_CLIENT_SECRET,
+  mercadoPago: {
+    publicKey: process.env.MERCADOPAGO_PUBLIC_KEY,
+    accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
   },
+  host: process.env.HOST
+    ? process.env.HOST
+    : 'http://localhost:' + process.env.PORT,
+  webhook: process.env.WEBHOOK_URL,
 });
