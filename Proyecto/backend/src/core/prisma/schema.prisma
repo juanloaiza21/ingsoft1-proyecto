@@ -60,8 +60,8 @@ model Trip {
   endDate       DateTime
   passengers    Passenger[]
   status        TripStatus
-  driver        Driver      @relation(fields: [driverId], references: [id])
-  driverId      String
+  driver        Driver?     @relation(fields: [driverId], references: [id])
+  driverId      String?
   price         Int
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
