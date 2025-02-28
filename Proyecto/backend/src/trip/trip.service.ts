@@ -1,7 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { PrismaService } from 'src/core/prisma/prisma.service';
+import { UserCreateTripDto } from './dto/user-create-trip.dto';
+import { DriverCreateTripDto } from './dto/driver-create-trip.dto';
+import { AcceptTripDto } from './dto/AcceptTrip.dto';
 
 @Injectable()
 export class TripService {
@@ -12,14 +15,14 @@ export class TripService {
     this.logger = new Logger(TripService.name);
   }
 
-  private tripCodeGen(userEmail: string) {
+  private tripCodeGen(id: string) {
     const date = new Date();
-    return `trip-${userEmail}-${date.getTime()}`;
+    return `trip-${id}-${date.getTime()}`;
   }
 
-  async create(createTripDto: CreateTripDto, email: string) {
+  async create(createTripDto: CreateTripDto, id: string) {
     try {
-      this.tripId = this.tripCodeGen(email);
+      this.tripId = this.tripCodeGen(id);
       return await this.prismaService.trip.create({
         data: {
           origin: createTripDto.origin,
@@ -33,8 +36,8 @@ export class TripService {
         },
       });
     } catch (error) {
-      this.logger.error(`Failed to create trip: ${error.message}`, error.stack);
-      throw error;
+      this.logger.error(error);
+      throw new HttpException('Failed to create trip', 400);
     }
   }
 
@@ -42,8 +45,8 @@ export class TripService {
     try {
       return await this.prismaService.trip.findMany();
     } catch (error) {
-      this.logger.error(`Failed to find trips: ${error.message}`, error.stack);
-      throw error;
+      this.logger.error(error);
+      throw new HttpException('Failed to create trip', 400);
     }
   }
 
@@ -57,7 +60,8 @@ export class TripService {
         `Failed to find trip ${id}: ${error.message}`,
         error.stack,
       );
-      throw error;
+      this.logger.error(error);
+      throw new HttpException('Failed to create trip', 400);
     }
   }
 
@@ -72,7 +76,8 @@ export class TripService {
         `Failed to update trip ${id}: ${error.message}`,
         error.stack,
       );
-      throw error;
+      this.logger.error(error);
+      throw new HttpException('Failed to create trip', 400);
     }
   }
 
@@ -86,13 +91,103 @@ export class TripService {
         `Failed to remove trip ${id}: ${error.message}`,
         error.stack,
       );
-      throw error;
+      this.logger.error(error);
+      throw new HttpException('Failed to create trip', 400);
     }
   }
 
-  async userCreateTrip() {}
+  // Private CRUD operations for Passenger
+  private async createPassenger(userId: string) {
+    try {
+      return await this.prismaService.passenger.create({
+        data: {
+          Trip: {
+            connect: { id: this.tripId },
+          },
+          user: {
+            connect: { id: userId },
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to create passenger: ${error.message}`,
+        error.stack,
+      );
+      this.logger.error(error);
+      throw new HttpException('Failed to create trip', 400);
+    }
+  }
 
-  async driverCreateTrip() {}
+  public async findAllPassengersTrip(tripId: string) {
+    try {
+      return await this.prismaService.passenger.findMany({
+        where: { tripId: tripId },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to find passengers: ${error.message}`,
+        error.stack,
+      );
+      this.logger.error(error);
+      throw new HttpException('Failed to create trip', 400);
+    }
+  }
 
-  async driverAcceptTrip() {}
+  async userCreateTrip(data: UserCreateTripDto, userId: string) {
+    try {
+      await this.create(data, userId);
+      await this.createPassenger(userId);
+      return await this.findOne(this.tripId);
+    } catch (error) {
+      this.logger.error(error);
+      throw new HttpException('Failed to create trip', 400);
+    }
+  }
+
+  async driverCreateTrip(data: DriverCreateTripDto, id: string) {
+    try {
+      this.tripId = this.tripCodeGen(id);
+      return await this.prismaService.trip.create({
+        data: {
+          origin: data.origin,
+          destination: data.destination,
+          departureDate: new Date(data.date),
+          beginDate: new Date(data.date),
+          endDate: new Date(data.date),
+          status: 'PENDING',
+          price: data.price,
+          id: this.tripId,
+          driver: {
+            connect: { id },
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.error(error);
+      throw new HttpException('Failed to create trip', 400);
+    }
+  }
+
+  async driverAcceptTrip(tripId: AcceptTripDto, driverId: string) {
+    try {
+      return await this.prismaService.trip.update({
+        where: { id: tripId.tripId },
+        data: { driver: { connect: { id: driverId } } },
+      });
+    } catch (error) {
+      this.logger.error(error);
+      throw new HttpException('Failed to create trip', 400);
+    }
+  }
+
+  async userJoinTrip(tripId: AcceptTripDto, userId: string) {
+    try {
+      this.tripId = tripId.tripId;
+      return await this.createPassenger(userId);
+    } catch (error) {
+      this.logger.error(error);
+      throw new HttpException('Failed to create trip', 400);
+    }
+  }
 }
