@@ -68,4 +68,20 @@ export class DriverService {
       throw new HttpException('Error updating driver', 420);
     }
   }
+
+  async findTrips(userId: string, userId2: string) {
+    try {
+      if (userId !== userId2) {
+        throw new HttpException('Unauthorized', 401);
+      }
+      return await this.prismaService.trip.findMany({
+        where: {
+          driverId: userId,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Error finding trips', error);
+      throw new HttpException('Error finding trips', 404);
+    }
+  }
 }

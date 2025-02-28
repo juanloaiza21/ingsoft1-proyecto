@@ -42,4 +42,10 @@ export class DriverController {
   update(@Param('id') id: string, @Body() updateDriverDto: UpdateDriverDto) {
     return this.driverService.update(id, updateDriverDto);
   }
+
+  @HttpCode(200)
+  @Get('/trip/:id')
+  async findTrips(@Param('id') id: string, @Request() req) {
+    return await this.driverService.findTrips(id, req.user.userId);
+  }
 }
