@@ -9,6 +9,10 @@ import configuration from './core/config/configuration';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ResponseInterceptor } from './core/response/response.interceptor';
 import { PaymentModule } from './payment/payment.module';
+import { DriverModule } from './driver/driver.module';
+import { TripModule } from './trip/trip.module';
+import { HistoricalModule } from './historical/historical.module';
+import { CalificationModule } from './calification/calification.module';
 
 @Module({
   imports: [
@@ -17,6 +21,10 @@ import { PaymentModule } from './payment/payment.module';
     AuthModule,
     ConfigModule.forRoot({ load: [configuration] }),
     PaymentModule,
+    DriverModule,
+    TripModule,
+    HistoricalModule,
+    CalificationModule,
   ],
   controllers: [AppController],
   providers: [
