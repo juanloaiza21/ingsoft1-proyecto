@@ -35,7 +35,7 @@ export default function Login(): JSX.Element {
       <View style={styles.registerContainer}>
         <Text style={styles.registerText}>¿No estás registrado? </Text>
         <TouchableOpacity onPress={() => {/* Aquí puedes redirigir a la pantalla de registro */}}>
-        <Link href="/register" style={styles.registerLink}>
+        <Link href="/sitemap" style={styles.registerLink}>
           Regístrate
         </Link>
         </TouchableOpacity>
