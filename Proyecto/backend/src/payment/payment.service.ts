@@ -94,6 +94,14 @@ export class PaymentService {
       const data = this.generatePreferenceBody(options);
       const { body } = data;
       const result = await this.pref.create({ body });
+      await this.prismaService.trip.update({
+        where: {
+          id: options.productId,
+        },
+        data: {
+          price: options.productPrice,
+        },
+      });
       await this.createBill(
         options.productId,
         id,

@@ -71,14 +71,24 @@ export class DriverService {
 
   async findTrips(userId: string, userId2: string) {
     try {
+      const gains: number[] = [];
       if (userId !== userId2) {
         throw new HttpException('Unauthorized', 401);
       }
-      return await this.prismaService.trip.findMany({
+      const data = await this.prismaService.trip.findMany({
         where: {
           driverId: userId,
         },
       });
+      data.forEach((trip) => {
+        trip.price = trip.price - trip.price * 0.1;
+        gains.push(trip.price);
+      });
+      const averageGains =
+        gains.length > 0
+          ? gains.reduce((sum, gain) => sum + gain, 0) / gains.length
+          : 0;
+      return { trips: data, gains, averageGains };
     } catch (error) {
       this.logger.error('Error finding trips', error);
       throw new HttpException('Error finding trips', 404);
