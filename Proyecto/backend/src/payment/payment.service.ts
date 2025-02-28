@@ -103,7 +103,7 @@ export class PaymentService {
         },
       });
       await this.createBill(
-        options.productId,
+        options.productId + '-bill-' + id,
         id,
         options.productPrice,
         body.external_reference,
