@@ -42,10 +42,4 @@ export class DriverController {
   update(@Param('id') id: string, @Body() updateDriverDto: UpdateDriverDto) {
     return this.driverService.update(id, updateDriverDto);
   }
-
-  @HttpCode(HttpStatus.ACCEPTED)
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.driverService.remove(id);
-  }
 }

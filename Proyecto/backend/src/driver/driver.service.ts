@@ -68,17 +68,4 @@ export class DriverService {
       throw new HttpException('Error updating driver', 420);
     }
   }
-
-  async remove(id: string) {
-    try {
-      await this.findOne(id);
-      return await this.prismaService.driver.delete({
-        where: {
-          id,
-        },
-      });
-    } catch (error) {
-      this.logger.error('Error removing driver', error);
-    }
-  }
 }
