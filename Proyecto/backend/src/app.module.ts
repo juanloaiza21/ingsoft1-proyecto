@@ -12,6 +12,7 @@ import { PaymentModule } from './payment/payment.module';
 import { DriverModule } from './driver/driver.module';
 import { TripModule } from './trip/trip.module';
 import { HistoricalModule } from './historical/historical.module';
+import { CalificationModule } from './calification/calification.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { HistoricalModule } from './historical/historical.module';
     DriverModule,
     TripModule,
     HistoricalModule,
+    CalificationModule,
   ],
   controllers: [AppController],
   providers: [
