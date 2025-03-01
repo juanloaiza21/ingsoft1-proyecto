@@ -1,19 +1,61 @@
 // app/register.tsx
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { useRouter } from 'expo-router';
 
 export default function Register(): JSX.Element {
+  const router = useRouter();
   const [name, setName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [role, setRole] = useState<string>(''); // Valores: '' | 'conductor' | 'pasajero'
   const [licensePlate, setLicensePlate] = useState<string>('');
 
+  // Función para validar que todos los campos estén completos
+  const isFormValid = (): boolean => {
+    if (!name || !email || !password || !role) {
+      return false;
+    }
+    
+    // Si es conductor, también debe tener placa
+    if (role === 'conductor' && !licensePlate) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Función para manejar el registro
+  const handleRegister = () => {
+    if (isFormValid()) {
+      // Aquí iría la lógica para enviar los datos al servidor
+      
+      // Mostrar alerta de éxito
+      Alert.alert(
+        "Registro exitoso",
+        "Registro completado satisfactoriamente",
+        [
+          { 
+            text: "Aceptar", 
+            onPress: () => router.push("/home") 
+          }
+        ]
+      );
+    } else {
+      // Mostrar alerta de error si faltan campos
+      Alert.alert(
+        "Error",
+        "Por favor completa todos los campos requeridos",
+        [{ text: "OK" }]
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Registro de Usuario</Text>
-      
+     
       {/* Campo Nombre */}
       <TextInput
         style={styles.input}
@@ -21,7 +63,6 @@ export default function Register(): JSX.Element {
         value={name}
         onChangeText={setName}
       />
-
       {/* Campo Correo */}
       <TextInput
         style={styles.input}
@@ -31,7 +72,6 @@ export default function Register(): JSX.Element {
         keyboardType="email-address"
         autoCapitalize="none"
       />
-
       {/* Campo Contraseña */}
       <TextInput
         style={styles.input}
@@ -40,7 +80,6 @@ export default function Register(): JSX.Element {
         onChangeText={setPassword}
         secureTextEntry
       />
-
       {/* Selector de Rol */}
       <Text style={styles.label}>Selecciona un rol:</Text>
       <View style={styles.pickerContainer}>
@@ -55,7 +94,6 @@ export default function Register(): JSX.Element {
           <Picker.Item label="Pasajero" value="pasajero" />
         </Picker>
       </View>
-
       {/* Campo de Placa solo si el rol es conductor */}
       {role === 'conductor' && (
         <TextInput
@@ -65,9 +103,12 @@ export default function Register(): JSX.Element {
           onChangeText={setLicensePlate}
         />
       )}
-
       {/* Botón de Registro */}
-      <TouchableOpacity style={styles.button} onPress={() => { /* Lógica de registro aquí */ }}>
+      <TouchableOpacity 
+        style={[styles.button, !isFormValid() && styles.buttonDisabled]} 
+        onPress={handleRegister}
+        disabled={!isFormValid()}
+      >
         <Text style={styles.buttonText}>Registrarse</Text>
       </TouchableOpacity>
     </View>
@@ -116,6 +157,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center',
     marginTop: 10
+  },
+  buttonDisabled: {
+    backgroundColor: '#CCCCCC'
   },
   buttonText: {
     color: '#fff',

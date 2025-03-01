@@ -1,17 +1,27 @@
 // app/login.tsx
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { Link } from 'expo-router';
+import React, { useState } from "react";
+
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+} from "react-native";
+import { Link, useRouter } from "expo-router";
 
 export default function Login(): JSX.Element {
-  const [username, setUsername] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+
+  const router = useRouter(); //para navegar a otra pantalla
 
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
         <Image
-          source={require('../assets/images/logo.png')}
+          source={require("../assets/images/logo.png")}
           style={styles.logo}
         />
       </View>
@@ -29,15 +39,15 @@ export default function Login(): JSX.Element {
         onChangeText={setPassword}
         secureTextEntry
       />
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push("/home")}
+      >
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
       </TouchableOpacity>
       <View style={styles.registerContainer}>
-        <Text style={styles.registerText}>¿No estás registrado? </Text>
-        <TouchableOpacity onPress={() => {/* Aquí puedes redirigir a la pantalla de registro */}}>
-        <Link href="/register" style={styles.registerLink}>
-          Regístrate
-        </Link>
+        <TouchableOpacity onPress={() => router.push("/register")}>
+          <Text style={styles.registerText}>¿No estás registrado? </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -47,52 +57,51 @@ export default function Login(): JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 20,
   },
   logoContainer: {
-    position: 'absolute',
-    top: 40,
-    left: 137,
+    alignItems: "center",
+    marginTop: 30, // Espacio entre la barra superior y el logo
+    marginBottom: 100, // Espacio entre el logo y los botones
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 200,
+    height: 200,
     opacity: 0.4,
-    resizeMode: 'contain',
   },
   input: {
-    width: '100%',
+    width: "100%",
     height: 50,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 5,
     paddingHorizontal: 10,
     marginVertical: 10,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     paddingVertical: 15,
     paddingHorizontal: 25,
     borderRadius: 5,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     marginVertical: 10,
   },
   buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
   },
   registerContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginTop: 20,
   },
   registerText: {
-    color: '#666',
+    color: "#666",
   },
   registerLink: {
-    color: '#007AFF',
-    fontWeight: 'bold',
+    color: "#007AFF",
+    fontWeight: "bold",
   },
 });

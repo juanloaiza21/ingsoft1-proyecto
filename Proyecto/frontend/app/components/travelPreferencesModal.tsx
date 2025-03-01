@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   addButton: {
-    backgroundColor: "#11ac28",
+    backgroundColor: "#11ac28",// el verdee
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 5,
@@ -219,11 +219,13 @@ const styles = StyleSheet.create({
     color: "red",
   },
   closeButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#11ac28",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
     alignItems: "center",
+    borderWidth: 1, // Grosor del borde
+    borderColor: "black", // Color del borde negro
   },
   buttonText: {
     color: "white",
