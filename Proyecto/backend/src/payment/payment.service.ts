@@ -103,7 +103,7 @@ export class PaymentService {
         },
       });
       await this.createBill(
-        options.productId + '-bill-' + id,
+        options.productId,
         id,
         options.productPrice,
         body.external_reference,
@@ -157,6 +157,7 @@ export class PaymentService {
           paymenForm: 'MERCADOPAGO',
           paymentId,
           status: 'PENDING',
+          id: tripId + '-bill-' + userId,
         },
       });
       return true;

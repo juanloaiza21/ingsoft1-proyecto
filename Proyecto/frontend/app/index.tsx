@@ -28,9 +28,6 @@ export default function Login() {
     appOn();
   });
   
-  /**
-   * @todo Agregar alerta en caso de error de que la app no esta conectada a internet
-   */
   const appOn = async () => {
     try {
       const data = await axios.request({
@@ -38,6 +35,8 @@ export default function Login() {
         url: ConfigVariables.api.appOn,
       })
     } catch (error) {
+      setMessage('Error de conexión');
+      setMessageType('FAILED');
       console.log(error);
     } 
   }

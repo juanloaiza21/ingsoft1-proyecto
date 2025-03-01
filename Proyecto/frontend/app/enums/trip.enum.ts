@@ -1,0 +1,6 @@
+enum TripStatus {
+  PENDING = 'PENDING',
+  CANCELLED = 'CANCELLED',
+  COMPLETED = 'COMPLETED',
+  ONGOING = 'ONGOING',
+}
