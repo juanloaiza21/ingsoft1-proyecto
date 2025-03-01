@@ -1,41 +1,55 @@
-// app/publishTravel.tsx
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet 
-} from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import Slider from '@react-native-community/slider';
+import React, { useState } from "react";
+import { useTheme } from "./context/themeContext";
+
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import Slider from "@react-native-community/slider";
 
 export default function PublishTravel(): JSX.Element {
-  const [origin, setOrigin] = useState<string>('');
-  const [destination, setDestination] = useState<string>('');
+  const { theme } = useTheme(); //para cambiar el tema
+
+  const [origin, setOrigin] = useState<string>("");
+  const [destination, setDestination] = useState<string>("");
   const [date, setDate] = useState<Date | null>(null);
   // Use separate state for controlling the picker and its mode
   const [showPicker, setShowPicker] = useState<boolean>(false);
-  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
-  const [price, setPrice] = useState<string>(''); // Using string for numeric input
+  const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
+  const [price, setPrice] = useState<string>(""); // Using string for numeric input
   const [seats, setSeats] = useState<number>(1);
   const [published, setPublished] = useState<boolean>(false);
 
   // Validations
-  const isOriginValid = origin.trim() !== '';
-  const isDestinationValid = destination.trim() !== '';
+  const isOriginValid = origin.trim() !== "";
+  const isDestinationValid = destination.trim() !== "";
   const isDateValid = date !== null;
   const isPriceValid = parseFloat(price) > 0;
-  const isFormValid = isOriginValid && isDestinationValid && isDateValid && isPriceValid;
+  const isFormValid =
+    isOriginValid && isDestinationValid && isDateValid && isPriceValid;
+
+  // Handle price input with $ symbol
+  const handlePriceChange = (text: string) => {
+    // Remove any non-numeric characters
+    const numericValue = text.replace(/[^0-9]/g, "");
+    setPrice(numericValue);
+  };
+
+  // Format price with $ symbol
+  const formattedPrice = price ? `$${price}` : "";
 
   // Handle date/time selection in two steps
   const handleDateTimeChange = (event: any, selectedDate?: Date) => {
     setShowPicker(false);
     if (selectedDate) {
-      if (pickerMode === 'date') {
+      if (pickerMode === "date") {
         // When the user picks the date, save it and open the time picker.
         setDate(new Date(selectedDate));
-        setPickerMode('time');
+        setPickerMode("time");
         setShowPicker(true);
       } else {
         // When the user picks the time, update the existing date with the new time.
@@ -48,7 +62,7 @@ export default function PublishTravel(): JSX.Element {
           // In the unlikely event that date is null, use the selected time.
           setDate(selectedDate);
         }
-        setPickerMode('date'); // Reset mode for future use
+        setPickerMode("date"); // Reset mode for future use
       }
     }
   };
@@ -59,39 +73,60 @@ export default function PublishTravel(): JSX.Element {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Publica un viaje</Text>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme === "dark" ? "#2d2c24" : "white" },
+      ]}
+    >
+      <Text style={[styles.title, theme === "dark" && styles.title2]}>
+        Publica un viaje
+      </Text>
 
       {/* Origen */}
-      <TextInput 
-        style={[styles.input, !isOriginValid && styles.inputError]} 
+      <TextInput
+        style={[styles.input, !isOriginValid && styles.inputError]}
         placeholder="Origen"
+        
+        placeholderTextColor={theme === "dark" ? "#AAAAAA" : "#888888"}
         value={origin}
         onChangeText={setOrigin}
+        editable={!published}
       />
 
       {/* Destino */}
-      <TextInput 
-        style={[styles.input, !isDestinationValid && styles.inputError]} 
+      <TextInput
+        style={[styles.input, !isDestinationValid && styles.inputError]}
         placeholder="Destino"
+        placeholderTextColor={theme === "dark" ? "#AAAAAA" : "#888888"}
         value={destination}
         onChangeText={setDestination}
+        editable={!published}
       />
 
       {/* Date & Time Picker */}
-      <TouchableOpacity 
+      <TouchableOpacity
         onPress={() => {
-          // Always start by picking the date.
-          setPickerMode('date');
-          setShowPicker(true);
-        }} 
-        style={[styles.input, styles.dateInput, !isDateValid && styles.inputError]}
+          if (!published) {
+            // Always start by picking the date.
+            setPickerMode("date");
+            
+            setShowPicker(true);
+          }
+        }}
+        style={[
+          styles.input,
+          styles.dateInput,
+          !isDateValid && styles.inputError,
+          published && styles.disabledInput,
+        ]}
+        disabled={published}
       >
         <Text style={styles.dateText}>
           {date ? date.toLocaleString() : "Selecciona fecha y hora"}
         </Text>
       </TouchableOpacity>
-      {showPicker && (
+      {showPicker && !published && (
         <DateTimePicker
           value={date ? date : new Date()}
           mode={pickerMode}
@@ -101,17 +136,24 @@ export default function PublishTravel(): JSX.Element {
       )}
 
       {/* Precio */}
-      <TextInput 
-        style={[styles.input, !isPriceValid && styles.inputError]} 
-        placeholder="Precio"
+      <TextInput
+        style={[styles.input, !isPriceValid && styles.inputError]}
+        placeholder="Precio ($)"
+        placeholderTextColor={theme === "dark" ? "#AAAAAA" : "#888888"}
         keyboardType="numeric"
-        value={price}
-        onChangeText={setPrice}
+        value={formattedPrice}
+        onChangeText={handlePriceChange}
+        editable={!published}
       />
 
       {/* Asientos */}
       <View style={styles.sliderContainer}>
-        <Text style={styles.sliderLabel}>Número de asientos: {seats}</Text>
+        <Text style={[styles.sliderLabel, theme === "dark" && styles.sliderLabel2]}
+
+        
+        >
+          Número de asientos disponibles: {seats}
+        </Text>
         <Slider
           style={styles.slider}
           minimumValue={1}
@@ -121,13 +163,18 @@ export default function PublishTravel(): JSX.Element {
           onValueChange={setSeats}
           minimumTrackTintColor="#007AFF"
           maximumTrackTintColor="#ccc"
+          disabled={published}
         />
       </View>
 
       {/* Publicar Button */}
-      <TouchableOpacity 
-        style={[styles.button, (!isFormValid || published) && styles.buttonDisabled]} 
-        onPress={handlePublish} 
+      <TouchableOpacity
+        style={[
+          styles.button,
+          !isFormValid && styles.buttonDisabled,
+          published && styles.buttonSuccess,
+        ]}
+        onPress={handlePublish}
         disabled={!isFormValid || published}
       >
         <Text style={styles.buttonText}>
@@ -142,56 +189,75 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff'
+    backgroundColor: "#fff",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 20,
-    textAlign: 'center'
+    textAlign: "center",
+  },
+  title2: {
+    color: "white",
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
   },
   input: {
     height: 50,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 5,
     paddingHorizontal: 10,
     marginBottom: 15,
-    justifyContent: 'center'
+    justifyContent: "center",
   },
   inputError: {
-    borderColor: 'red'
+    borderColor: "red",
+  },
+  disabledInput: {
+    backgroundColor: "#f0f0f0",
+    color: "#888",
   },
   dateInput: {
-    justifyContent: 'center'
+    justifyContent: "center",
   },
   dateText: {
-    color: '#333'
+    color: "#333",
   },
   sliderContainer: {
-    marginVertical: 15
+    marginVertical: 15,
   },
   sliderLabel: {
     fontSize: 16,
-    marginBottom: 5
+    marginBottom: 5,
+  },
+  sliderLabel2: {
+    color: "white",
+    fontSize: 16,
+    marginBottom: 5,
   },
   slider: {
-    width: '100%',
-    height: 40
+    width: "100%",
+    height: 40,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     paddingVertical: 15,
     borderRadius: 5,
-    alignItems: 'center',
-    marginTop: 20
+    alignItems: "center",
+    marginTop: 20,
   },
   buttonDisabled: {
-    backgroundColor: '#ccc'
+    backgroundColor: "#ccc",
+  },
+  buttonSuccess: {
+    backgroundColor: "#4CD964", // Color verde de iOS
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold'
-  }
+    fontWeight: "bold",
+  },
 });

@@ -9,29 +9,24 @@ import {
   StyleSheet,
   Image,
   Modal,
-  TextInput,
   ScrollView,
   Linking,
 } from "react-native";
 
 export default function Settings() {
+  const { theme } = useTheme();
+  const router = useRouter();
+  const [faqVisible, setFaqVisible] = useState(false);
+  const [logoutVisible, setLogoutVisible] = useState(false);
 
-  const { theme } = useTheme();//para cambiar el tema
-
-  const router =useRouter();//para navegar a otra pantalla
-  const [faqVisible, setFaqVisible] = useState(false); //estado para controlas la visibilidad de las FAQ
-
-  // función para abrir el correo de soporte
   const handleSupportPress = () => {
-    const email = "diegosolorzanoyt@gmail.com"; // Reemplazar con el correo real de soporte
+    const email = "diegosolorzanoyt@gmail.com";
     const subject = encodeURIComponent("Solicitud de soporte técnico");
     const body = encodeURIComponent(
       "Hola, necesito ayuda con la aplicación. Aquí está mi problema:\n\n"
     );
 
     const mailtoURL = `mailto:${email}?subject=${subject}&body=${body}`;
-
-    //manejar errores al abrir el correo
     Linking.canOpenURL(mailtoURL)
       .then((supported) => {
         if (supported) {
@@ -47,74 +42,112 @@ export default function Settings() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "white" }]}
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme === "dark" ? "#2d2c24" : "white" },
+      ]}
     >
       <View style={styles.headerContainer}>
-        <Text
-        style={[styles.title, theme === "dark" && styles.title2]}
-        >Ajustes</Text>
+        <Text style={[styles.title, theme === "dark" && styles.title2]}>
+          Ajustes
+        </Text>
         <Image
           source={require("../assets/images/settings-icon.png")}
           style={styles.image}
         />
       </View>
-
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.optionButton}
-        onPress={()=>router.push("/profile")}
+        <TouchableOpacity
+          style={styles.optionButton}
+          onPress={() => router.push("/profile")}
         >
           <Text style={styles.buttonText}>Mi perfil</Text>
         </TouchableOpacity>
-
         <TouchableOpacity
           style={styles.optionButton}
           onPress={() => setFaqVisible(true)}
         >
           <Text style={styles.buttonText}>Preguntas frecuentes</Text>
         </TouchableOpacity>
-
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={faqVisible}
-          onRequestClose={() => setFaqVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Preguntas Frecuentes</Text>
-              <ScrollView style={styles.scrollContainer}>
-                {faqData.map((item, index) => (
-                  <View key={index} style={styles.faqItem}>
-                    <Text style={styles.question}>{item.question}</Text>
-                    <Text style={styles.answer}>{item.answer}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setFaqVisible(false)}
-              >
-                <Text style={styles.buttonText}>Cerrar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
         <TouchableOpacity
           style={styles.optionButton}
           onPress={handleSupportPress}
         >
+          {/* Modal de Preguntas Frecuentes */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={faqVisible}
+            onRequestClose={() => setFaqVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Preguntas Frecuentes</Text>
+                <ScrollView style={styles.scrollContainer}>
+                  {faqData.map((item, index) => (
+                    <View key={index} style={styles.faqItem}>
+                      <Text style={styles.question}>{item.question}</Text>
+                      <Text style={styles.answer}>{item.answer}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+                <TouchableOpacity
+                  style={styles.closeButton1}
+                  onPress={() => setFaqVisible(false)}
+                >
+                  <Text style={styles.buttonText}>Cerrar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
           <Text style={styles.buttonText}>Soporte técnico</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.optionButton}>
+        <TouchableOpacity
+          style={styles.optionButton}
+          onPress={() => setLogoutVisible(true)}
+        >
           <Text style={styles.buttonText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </View>
+      {/* Modal de Confirmación de Cierre de Sesión */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={logoutVisible}
+        onRequestClose={() => setLogoutVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              ¿Estás seguro de que deseas cerrar la sesión?
+            </Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setLogoutVisible(false)}
+            >
+              <Text style={styles.buttonText}>No, volver</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={() => {
+                router.push("/");
+                setLogoutVisible(false);
+                Alert.alert(
+                  "Sesión cerrada",
+                  "Has cerrado sesión exitosamente."
+                );
+              }}
+            >
+              <Text style={styles.buttonText}>Sí, salir</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
-
 const faqData = [
   {
     question: "¿Cómo puedo registrarme en la aplicación?",
@@ -158,6 +191,23 @@ const faqData = [
   },
 ];
 const styles = StyleSheet.create({
+  logoutButton: {
+    backgroundColor: "#dc3545",
+    padding: 15,
+    borderRadius: 10,
+    width: "80%",
+    alignItems: "center",
+  },
+
+  closeButton: {
+    backgroundColor: "#28a745",
+    padding: 15,
+    borderRadius: 10,
+    width: "80%",
+    marginBottom: 10,
+    alignItems: "center",
+  },
+
   headerContainer: {
     flexDirection: "row", // Alinea los elementos en fila (horizontalmente)
     alignItems: "center", // Centra verticalmente el texto y la imagen
@@ -186,7 +236,6 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
 
-  
   title2: {
     fontSize: 26, // Un poco más grande
     fontWeight: "bold",
@@ -198,7 +247,6 @@ const styles = StyleSheet.create({
     marginBottom: 22,
     marginLeft: 15,
   },
-
 
   image: {
     width: 150,
@@ -277,7 +325,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  closeButton: {
+  closeButton1: {
     backgroundColor: "#c70039",
     padding: 10,
     borderRadius: 10,
