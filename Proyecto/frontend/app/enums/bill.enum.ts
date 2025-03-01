@@ -1,0 +1,5 @@
+enum BillStatus {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  CANCELLED = 'CANCELLED',
+}
