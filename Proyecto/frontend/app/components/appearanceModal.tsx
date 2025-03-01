@@ -72,16 +72,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#ccc",
   },
   selected: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#11ac28",
+    borderWidth: 1, // Grosor del borde
+    borderColor: "black", // Color del borde negro
   },
   buttonText: {
     color: "white",
     fontWeight: "bold",
   },
   confirmButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#11ac28",
     padding: 10,
     borderRadius: 5,
+    borderWidth: 1, // Grosor del borde
+    borderColor: "black", // Color del borde negro
   },
   confirmText: {
     color: "white",

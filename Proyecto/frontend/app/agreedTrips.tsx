@@ -1,4 +1,3 @@
-// app/historial.tsx
 import React, { useState, useEffect } from "react";
 import { useTheme } from "./context/themeContext";
 
@@ -22,7 +21,7 @@ interface Trip {
   price: string;
 }
 
-// Función simulada para obtener el historial de viajes desde el backend
+// Función simulada para obtener los viajes programados desde el backend
 const fetchTrips = async (): Promise<Trip[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -50,8 +49,7 @@ const fetchTrips = async (): Promise<Trip[]> => {
   });
 };
 
-export default function Historial(): JSX.Element {
-
+export default function AgreedTrips(): JSX.Element {
   const { theme } = useTheme(); //para cambiar el tema
 
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -98,7 +96,7 @@ export default function Historial(): JSX.Element {
     <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "white" }]}
     >
       <Text style={[styles.title, theme === "dark" && styles.title2]}>
-      Historial de Viajes</Text>
+      Viajes programados</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" />
       ) : (
@@ -110,7 +108,7 @@ export default function Historial(): JSX.Element {
         />
       )}
 
-      {/* Modal de detalles del viaje */}
+      {/* Modal del viaje */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -121,15 +119,6 @@ export default function Historial(): JSX.Element {
           <View style={styles.modalContent}>
             {selectedTrip && (
               <>
-                <TouchableOpacity
-                  onPress={handleDriverPress}
-                  style={styles.driverImageContainer}
-                >
-                  <Image
-                    source={{ uri: selectedTrip.driverImage }}
-                    style={styles.driverImage}
-                  />
-                </TouchableOpacity>
                 <View style={styles.detailsContainer}>
                   <Text style={styles.detailText}>
                     Duración: {selectedTrip.duration}
@@ -140,16 +129,16 @@ export default function Historial(): JSX.Element {
                 </View>
 
                 <View style={{ marginBottom: 15 }}>
-                <Button
-                  title="Ver perfil del Conductor del viaje"
-                  onPress={() => {
-                    closeModal();
-                    router.push("/driverProfile");
-                  }}
-                />
+                  <Button
+                    title="Ver información del viaje"
+                    onPress={() => {
+                      closeModal();
+                      router.push("/currentTrip");
+                    }}
+                  />
                 </View>
-                <Button title="Cerrar" onPress={closeModal} color = "#c91905"/>
-          
+
+                <Button title="Cerrar" onPress={closeModal} color="#c91905" />
               </>
             )}
           </View>
@@ -171,12 +160,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
+
   title2: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "center",
-    color: "white"
+    color: "white",
   },
   listContainer: {
     paddingBottom: 20,
