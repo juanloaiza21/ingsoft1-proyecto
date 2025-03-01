@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useTheme } from "./context/themeContext";
@@ -6,6 +6,7 @@ import { useTheme } from "./context/themeContext";
 export default function Home(): JSX.Element {
   const router = useRouter(); //para navegar a otra pantalla
   const { theme } = useTheme(); //para cambiar el tema
+
 
   return (
     <View

@@ -1,5 +1,5 @@
 // app/login.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import {
   View,
@@ -9,13 +9,74 @@ import {
   StyleSheet,
   Image,
 } from "react-native";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
+import { ConfigVariables } from "./config/config";
+import axios from "axios";
+import { ApiResponse } from "@/types/api-response.type";
+import { MsgBox} from './styles';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function Login(): JSX.Element {
+export default function Login() {
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
+  const [messageType, setMessageType] = useState<string>("");
 
   const router = useRouter(); //para navegar a otra pantalla
+
+  useEffect(() => {
+    appOn();
+  });
+  
+  /**
+   * @todo Agregar alerta en caso de error de que la app no esta conectada a internet
+   */
+  const appOn = async () => {
+    try {
+      const data = await axios.request({
+        method: 'GET',
+        url: ConfigVariables.api.appOn,
+      })
+    } catch (error) {
+      console.log(error);
+    } 
+  }
+
+  const handleLogin = async (credentials: {email: string, password: string}) => {
+    try {
+      const petititon = await axios.request({
+        method: ConfigVariables.api.auth.login.method,
+        url: ConfigVariables.api.auth.login.url,
+        data: {
+          email: credentials.email,
+          password: credentials.password,
+        },
+      });
+      const data: ApiResponse = petititon.data;
+      const {result, statusCode} = data;
+      if (statusCode != 200 ) {
+        handleMessage('Usuario o contraseña incorrectos');    
+      }
+      await storeTokens(result.access_token, result.refresh_token);
+      router.push("/home")
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+    const storeTokens = async (accessToken: string, refreshToken: string) => {
+      try {
+        await AsyncStorage.setItem('accessToken', accessToken);
+        await AsyncStorage.setItem('refreshToken', refreshToken);
+      } catch (error) {
+        console.error('Error storing tokens:', error);
+      }
+    };
+
+  const handleMessage = (newMessage: string, type = 'FAILED') => {
+    setMessage(newMessage);
+    setMessageType(type);
+  };
 
   return (
     <View style={styles.container}>
@@ -39,9 +100,10 @@ export default function Login(): JSX.Element {
         onChangeText={setPassword}
         secureTextEntry
       />
+      <MsgBox type = {messageType}>{message}</MsgBox>
       <TouchableOpacity
         style={styles.button}
-        onPress={() => router.push("/home")}
+        onPress={() => handleLogin({email: username, password: password})}
       >
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
       </TouchableOpacity>
@@ -63,8 +125,8 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-    marginTop: 30, // Espacio entre la barra superior y el logo
-    marginBottom: 100, // Espacio entre el logo y los botones
+    marginTop: 30,
+    marginBottom: 100,
   },
   logo: {
     width: 200,
