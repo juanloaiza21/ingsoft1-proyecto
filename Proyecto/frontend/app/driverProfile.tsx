@@ -205,7 +205,7 @@ export default function DriverProfile() {
         Perfil del conductor
       </Text>
       <Image
-        source={require("../assets/images/icon-profile.png")}
+        source={require("../assets/images/Daguilastrico.jpeg")}
         style={styles.image}
       />
       <View style={styles.infoContainer}>
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 75,
     marginBottom: 20,
-    resizeMode: "contain",
+    resizeMode: "cover", // Changed from "contain" to "cover" to fill the circle
   },
   buttonText: {
     color: "white",
