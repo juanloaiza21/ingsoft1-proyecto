@@ -84,22 +84,22 @@ export default function Register() {
             role: role
           }
         });
+        Alert.alert(
+          "Registro exitoso",
+          "Registro completado satisfactoriamente",
+          [
+            { 
+              text: "Aceptar", 
+              onPress: () => router.push("..") 
+            }
+          ]
+        );
       } catch (error) {
         setMessage("Error creando usuario");
         setMessageType("error");
         console.log(error);
       }
       // Mostrar alerta de éxito
-      Alert.alert(
-        "Registro exitoso",
-        "Registro completado satisfactoriamente",
-        [
-          { 
-            text: "Aceptar", 
-            onPress: () => router.push("..") 
-          }
-        ]
-      );
     } else {
       // Verificar si el problema es que las contraseñas no coinciden
       if (password && confirmPassword && password !== confirmPassword) {
