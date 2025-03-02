@@ -174,9 +174,7 @@ export class PaymentService {
 
   async getPaymentById(id: string) {
     try {
-      this.logger.log(id);
       const data = await this.payment.get({ id });
-      this.logger.log(data);
       const status: BillStatus =
         data.status === 'approved' ? BillStatus.ACCEPTED : BillStatus.CANCELLED;
       if (status != BillStatus.ACCEPTED)
