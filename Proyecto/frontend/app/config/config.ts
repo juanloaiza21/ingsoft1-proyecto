@@ -34,7 +34,7 @@ export const ConfigVariables = {
         url: `${url}/auth/logout/`,
       },
       checkJWT: {
-        method: 'POST',
+        method: 'GET',
         url: `${url}/auth/profile/`,
       },
       refreshJWT: {
@@ -58,6 +58,10 @@ export const ConfigVariables = {
       getPayment: {
         method: 'GET',
         url: `${url}/payment/result-payment/`,
+      },
+      getBill: {
+        method: 'GET',
+        url: `${url}/payment/bill/`,
       },
     },
     calification: {

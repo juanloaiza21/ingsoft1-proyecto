@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, AppState, Linking } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTheme } from "./context/themeContext";
@@ -8,6 +8,11 @@ import { Driver } from "./types/driver.types";
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from "./types/user.types";
+import axios from "axios";
+import { ConfigVariables } from "./config/config";
+import { ApiResponse } from "./types/api-response.type";
+import { CheckoutResponse } from "./types/chackout.types";
+import * as WebBrowser from 'expo-web-browser';
 
 export default function Page() {
   const { theme } = useTheme(); //para cambiar el tema
@@ -23,6 +28,32 @@ export default function Page() {
     user: null,
   });
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [access_token, setAccess_token] = useState<string>('');
+  const [refresh_token, setRefresh_token] = useState<string>('');
+  const [paymentReference, setPaymentReference] = useState<string>('');
+  const [urlPayment, setUrlPayment] = useState<string | null>(null);
+  const [collectorId, setCollectorId] = useState<string | null>(null);
+
+  const getTokens = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      setAccess_token(accessToken ?? '');
+      setRefresh_token(refreshToken ?? '');
+    } catch (error) {
+      console.error('Error al recuperar tokens:', error);
+      return { accessToken: null, refreshToken: null };
+    }
+  };
+  useEffect(() => {
+    const loadTokens = async () => {
+      await getTokens();
+      if (access_token && refresh_token) {
+        console.log('Tokens recuperados correctamente');
+      }
+    };
+    loadTokens();
+  }, []);
 
   // Function to load travel data from AsyncStorage
   const loadTravelData = async () => {
@@ -48,13 +79,91 @@ export default function Page() {
     setShowCancelConfirm(true);
   };
 
-  const confirmCancel = () => {
-    Alert.alert(
-      "Viaje Programado",
-      "Tu viaje ha sido programado con éxito, se le notificará al conductor",
-      [{ text: "OK" }]
-    );
-    setShowCancelConfirm(false);
+  const confirmCancel = async (): Promise<{link: string, collector: string}> => {
+    try {
+      let user1Petition = await axios.request({
+        method: ConfigVariables.api.auth.checkJWT.method,
+        url: ConfigVariables.api.auth.checkJWT.url,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
+      let user:ApiResponse = user1Petition.data;
+      user1Petition = await axios.request({
+        method: ConfigVariables.api.user.getOne.method,
+        url: `${ConfigVariables.api.user.getOne.url}${user.result.userId}`,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      })
+      user = user1Petition.data;
+      const petition = await axios.request({
+        method: ConfigVariables.api.payment.generate.method,
+        url: ConfigVariables.api.payment.generate.url,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+        data:{
+          method: "credit_card",
+          email: user.result.email,
+          tripId: travelData.travel?.id,
+          value: travelData.travel?.price,
+        }
+      });
+      const result: ApiResponse = petition.data;
+      const payment: CheckoutResponse = result.result;
+      const collector = await axios.request({
+        method: ConfigVariables.api.payment.getPref.method,
+        url: ConfigVariables.api.payment.getPref.url+payment.billId,
+      });
+      setPaymentReference(payment.billId);
+      setCollectorId(collector.data.result.collectorId);
+      console.log(payment.billId);
+      console.log(collector.data.result);
+      return {link: payment.paylink, collector: payment.externalId};
+    } catch (error) {
+      console.log(error);
+      Alert.alert(
+        "Error",
+        "Ocurrió un error al programar el viaje, por favor intenta de nuevo",
+        [{ text: "OK" }]
+      );
+      return{link: '', collector: ''};
+      
+    }
+  };
+
+  const handlePayment = async (paymentReference:string) => {
+    try {
+      console.log(ConfigVariables.api.payment.getPayment.url+paymentReference); 
+      const validation = await axios.request({
+        method: ConfigVariables.api.payment.getBill.method,
+        url: ConfigVariables.api.payment.getBill.url+paymentReference,
+      });
+      const data: ApiResponse = validation.data;
+      if (data.result.status === 'ACCEPTED') {
+        Alert.alert(
+          "Pago exitoso",
+          "Tu pago ha sido procesado con éxito, se le notificará al conductor",
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert(
+          "Pago fallido",
+          "Tu pago no ha sido procesado con éxito, por favor intenta de nuevo",
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error) {
+      console.log(error);
+      Alert.alert(
+        "Error",
+        "Ocurrió un error al programar el viaje, por favor intenta de nuevo",
+        [{ text: "OK" }]
+      );
+    } finally{
+      setShowCancelConfirm(false);
+    }
   };
 
   const dismissCancel = () => {
@@ -143,7 +252,7 @@ export default function Page() {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => router.push("/chat")}
+          onPress={() => Linking.openURL(`tel:${travelData.user?.phoneNumber}`)} 
         >
           <Text style={styles.buttonText}>Contactar</Text>
         </TouchableOpacity>
@@ -190,7 +299,32 @@ export default function Page() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.confirmButton}
-                onPress={confirmCancel}
+                onPress={async () => {
+                  const data = !urlPayment?  await confirmCancel() : {link: urlPayment, collector: collectorId};
+                  const {link, collector} = data;
+                  if (link) {
+                    setUrlPayment(link);
+                    setCollectorId(collectorId);
+                    // Open the payment link in browser
+                    await WebBrowser.openBrowserAsync(link);
+                    
+                    // Set up AppState listener to detect when browser is closed
+                    const handleAppStateChange = (nextAppState: string) => {
+                      if (nextAppState === 'active') {
+                        // Browser was closed, process the payment
+                        if (collector) {
+                          handlePayment(collector);
+                        }
+                        // Clean up the subscription
+                        subscription.remove();
+                      }
+                    };
+                    
+                    // Add the AppState change listener
+                    const subscription = AppState.addEventListener('change', handleAppStateChange);
+                  }
+
+                }}
               >
                 <Text style={styles.confirmButtonText}>Pactar viaje</Text>
               </TouchableOpacity>

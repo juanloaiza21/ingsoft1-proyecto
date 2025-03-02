@@ -34,7 +34,7 @@ import { ConfigVariables } from "./config/config";
 import { Driver } from "./types/driver.types";
 import { Trip } from "./types/trip.types";
 import { User } from "./types/user.types";
-import { Calification } from "./types/calification-response";
+import { Calification } from "./types/calification-response.types";
 import { ApiResponse } from "./types/api-response.type";
 
 export default function DriverProfile() {

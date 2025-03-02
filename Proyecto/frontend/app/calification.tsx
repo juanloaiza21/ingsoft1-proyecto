@@ -14,7 +14,7 @@ import {
   Button,
 } from "react-native";
 import { useRouter } from "expo-router";
-import type { Calification } from "./types/calification-response";
+import type { Calification } from "./types/calification-response.types";
 import axios from "axios";
 import { ConfigVariables } from "./config/config";
 import { Driver } from "./types/driver.types";
