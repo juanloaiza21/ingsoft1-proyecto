@@ -18,6 +18,8 @@ import { FontAwesome } from "@expo/vector-icons";
 export default function DriverProfile() {
   const { theme } = useTheme(); //para cambiar el tema
 
+  const router = useRouter(); //para navegar a otra pantalla
+
   const [modalVisible, setModalVisible] = useState(false);
   const [complaint, setComplaint] = useState("");
 
@@ -77,7 +79,12 @@ export default function DriverProfile() {
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.optionButton}>
+        <TouchableOpacity
+          style={styles.optionButton}
+          onPress={() => {
+            router.push("/historial");
+          }}
+        >
           <Text style={styles.buttonText}>Ver historial de viajes</Text>
         </TouchableOpacity>
 

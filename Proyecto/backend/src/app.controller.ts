@@ -9,19 +9,4 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
-
-  @Get('success')
-  getSuccess(): string {
-    return 'Success';
-  }
-
-  @Get('fail')
-  getHealth(): string {
-    return 'Fail';
-  }
-
-  @Get('pending')
-  getPaymentMethods() {
-    return 'Pending';
-  }
 }

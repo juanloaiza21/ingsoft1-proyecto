@@ -1,17 +1,19 @@
 // app/historial.tsx
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Modal, 
+import React, { useState, useEffect } from "react";
+import { useTheme } from "./context/themeContext";
+
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
   Image,
   ActivityIndicator,
-  Button
-} from 'react-native';
-import { useRouter } from 'expo-router';
+  Button,
+} from "react-native";
+import { useRouter } from "expo-router";
 
 interface Trip {
   id: string;
@@ -22,18 +24,36 @@ interface Trip {
 
 // Función simulada para obtener el historial de viajes desde el backend
 const fetchTrips = async (): Promise<Trip[]> => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(() => {
       resolve([
-        { id: '1', driverImage: 'https://via.placeholder.com/100', duration: '1h 30m', price: '$20' },
-        { id: '2', driverImage: 'https://via.placeholder.com/100', duration: '2h 15m', price: '$30' },
-        { id: '3', driverImage: 'https://via.placeholder.com/100', duration: '45m', price: '$15' },
+        {
+          id: "1",
+          driverImage: "https://via.placeholder.com/100",
+          duration: "1h 30m",
+          price: "$20",
+        },
+        {
+          id: "2",
+          driverImage: "https://via.placeholder.com/100",
+          duration: "2h 15m",
+          price: "$30",
+        },
+        {
+          id: "3",
+          driverImage: "https://via.placeholder.com/100",
+          duration: "45m",
+          price: "$15",
+        },
       ]);
     }, 1000);
   });
 };
 
 export default function Historial(): JSX.Element {
+
+  const { theme } = useTheme(); //para cambiar el tema
+
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -42,7 +62,7 @@ export default function Historial(): JSX.Element {
 
   useEffect(() => {
     setLoading(true);
-    fetchTrips().then(data => {
+    fetchTrips().then((data) => {
       setTrips(data);
       setLoading(false);
     });
@@ -60,20 +80,25 @@ export default function Historial(): JSX.Element {
 
   const handleDriverPress = () => {
     // Navegar a la página driverProfile.tsx
-    router.push('/driverProfile');
+    router.push("/driverProfile");
     // Opcionalmente, cerrar el modal
     closeModal();
   };
 
   const renderTripItem = ({ item }: { item: Trip }) => (
-    <TouchableOpacity style={styles.tripItem} onPress={() => handleTripPress(item)}>
+    <TouchableOpacity
+      style={styles.tripItem}
+      onPress={() => handleTripPress(item)}
+    >
       <Text style={styles.tripText}>Viaje {item.id}</Text>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Historial de Viajes</Text>
+    <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "white" }]}
+    >
+      <Text style={[styles.title, theme === "dark" && styles.title2]}>
+      Historial de Viajes</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" />
       ) : (
@@ -96,7 +121,7 @@ export default function Historial(): JSX.Element {
           <View style={styles.modalContent}>
             {selectedTrip && (
               <>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={handleDriverPress}
                   style={styles.driverImageContainer}
                 >
@@ -106,10 +131,25 @@ export default function Historial(): JSX.Element {
                   />
                 </TouchableOpacity>
                 <View style={styles.detailsContainer}>
-                  <Text style={styles.detailText}>Duración: {selectedTrip.duration}</Text>
-                  <Text style={styles.detailText}>Precio: {selectedTrip.price}</Text>
+                  <Text style={styles.detailText}>
+                    Duración: {selectedTrip.duration}
+                  </Text>
+                  <Text style={styles.detailText}>
+                    Precio: {selectedTrip.price}
+                  </Text>
                 </View>
-                <Button title="Cerrar" onPress={closeModal} />
+
+                <View style={{ marginBottom: 15 }}>
+                <Button
+                  title="Ver perfil del Conductor del viaje"
+                  onPress={() => {
+                    closeModal();
+                    router.push("/driverProfile");
+                  }}
+                />
+                </View>
+                <Button title="Cerrar" onPress={closeModal} color = "#c91905"/>
+          
               </>
             )}
           </View>
@@ -123,13 +163,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
+  },
+  title2: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+    color: "white"
   },
   listContainer: {
     paddingBottom: 20,
@@ -137,27 +184,27 @@ const styles = StyleSheet.create({
   tripItem: {
     padding: 15,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 8,
     marginBottom: 10,
-    backgroundColor: '#fafafa',
+    backgroundColor: "#fafafa",
   },
   tripText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContent: {
-    width: '80%',
-    backgroundColor: '#fff',
+    width: "80%",
+    backgroundColor: "#fff",
     borderRadius: 10,
     padding: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   driverImageContainer: {
     marginBottom: 15,
@@ -169,7 +216,7 @@ const styles = StyleSheet.create({
   },
   detailsContainer: {
     marginBottom: 15,
-    alignItems: 'center',
+    alignItems: "center",
   },
   detailText: {
     fontSize: 16,
