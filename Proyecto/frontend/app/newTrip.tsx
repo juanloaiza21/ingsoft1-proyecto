@@ -94,7 +94,7 @@ export default function Page() {
             </Text>
             <View style={styles.ratingContainer}>
               <Ionicons name="star" size={20} color="#FFD700" />
-              <Text style={styles.rating}>{travelData.driver.calification}</Text>
+              <Text style={styles.rating}>{travelData.driver.calification.toFixed(1)}</Text>
             </View>
           </View>
         </View>

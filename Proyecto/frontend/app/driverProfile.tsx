@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "./context/themeContext";
 
 import {
@@ -15,6 +15,28 @@ import {
 
 import { FontAwesome } from "@expo/vector-icons";
 
+interface TravelOption {
+  "id": string,
+  "origin": string,
+  "destination": string,
+  "departureDate": string,
+  "beginDate": string,
+  "endDate": string,
+  "status": string,
+  "driverId": string,
+  "price": number,
+  "createdAt": string,
+  "updatedAt": string,
+}
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from "axios";
+import { ConfigVariables } from "./config/config";
+import { Driver } from "./types/driver.types";
+import { Trip } from "./types/trip.types";
+import { User } from "./types/user.types";
+import { Calification } from "./types/calification-response";
+import { ApiResponse } from "./types/api-response.type";
+
 export default function DriverProfile() {
   const { theme } = useTheme(); //para cambiar el tema
 
@@ -22,6 +44,87 @@ export default function DriverProfile() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [complaint, setComplaint] = useState("");
+  const [access_token, setAccess_token] = useState<string>('');
+  const [refresh_token, setRefresh_token] = useState<string>('');
+  const [travelData, setTravelData] = useState<{
+    driver: Driver | null;
+    travel: Trip | null;
+    user: User | null;
+  }>({
+    driver: null,
+    travel: null,
+    user: null,
+  });
+
+  const fetchCalifications = async (): Promise<void> => {
+    try {
+      const result: Calification[] = []
+      const petition = await axios.request({
+        method: ConfigVariables.api.calification.getAll.method,
+        url: ConfigVariables.api.calification.getAll.url+ travelData.user?.id,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      })
+      const data: ApiResponse = petition.data;
+      data.result.forEach((calification: Calification) => {
+        result.push(calification);
+      });
+      // Store califications data in AsyncStorage
+      try {
+        await AsyncStorage.setItem('calificationsData', JSON.stringify(result));
+        console.log('Califications data saved successfully');
+      } catch (error) {
+        console.error('Failed to save califications data:', error);
+      }
+      return;
+    } catch (error) {
+      console.error(error);
+      return;  // Return empty array in case of error
+    }
+  };
+
+  // Función para obtener los tokens desde AsyncStorage
+  const getTokens = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      setAccess_token(accessToken ?? '');
+      setRefresh_token(refreshToken ?? '');
+    } catch (error) {
+      console.error('Error al recuperar tokens:', error);
+      return { accessToken: null, refreshToken: null };
+    }
+  };
+
+    // Function to load travel data from AsyncStorage
+    const loadTravelData = async () => {
+      try {
+        const data = await AsyncStorage.getItem('currentTravelData');
+        if (data) {
+          setTravelData(JSON.parse(data));
+          console.log("Travel data loaded successfully");
+        }
+      } catch (error) {
+        console.error("Failed to load travel data:", error);
+      }
+    };
+  
+    // Load travel data when component mounts
+    useEffect(() => {
+      loadTravelData();
+    }, []);
+
+  // Ejemplo de uso en useEffect
+  useEffect(() => {
+    const loadTokens = async () => {
+      await getTokens();
+      if (access_token && refresh_token) {
+        console.log('Tokens recuperados correctamente');
+      }
+    };
+    loadTokens();
+  }, []);
 
   // Estado para controlar la visibilidad del modal de calificación
   const [modalVisibleRating, setModalVisibleRating] = useState(false);
@@ -30,30 +133,63 @@ export default function DriverProfile() {
   // Estado para almacenar el comentario opcional
   const [ratingComment, setRatingComment] = useState("");
 
-  const handleReport = () => {
+  const handleReport = async () => {
     if (complaint.trim() === "") {
       Alert.alert("Error", "Por favor, escribe una queja antes de enviar.");
       return;
     }
-
+    await axios.request({
+      method: ConfigVariables.api.calification.create.method,
+      url: ConfigVariables.api.calification.create.url,
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+      data: {
+        score: 1,
+        comment: complaint,
+        userCalificatedId: travelData.driver?.id,
+      },
+    })
+    await fetchCalifications();
     Alert.alert("Queja enviada", "Tu reporte ha sido registrado.", [
       { text: "Aceptar", onPress: () => setModalVisible(false) },
     ]);
     setComplaint(""); // Limpiar el campo después de enviar
   };
 
-  const handleRatingSubmit = () => {
+  const handleRatingSubmit = async () => {
     if (rating === 0) {
       Alert.alert("Error", "Por favor selecciona al menos 1 estrella.");
       return;
     }
-    Alert.alert(
-      "Calificación enviada",
-      `Calificaste al conductor con ${rating} estrellas.\nComentario: ${
-        ratingComment || "Ninguno"
-      }`,
-      [{ text: "Aceptar", onPress: () => setModalVisibleRating(false) }]
-    );
+    try {
+
+      await axios.request({
+        method: ConfigVariables.api.calification.create.method,
+        url: ConfigVariables.api.calification.create.url,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+        data: {
+          score: rating,
+          comment: ratingComment,
+          userCalificatedId: travelData.driver?.id,
+        },
+      })
+      await fetchCalifications();
+      console.log('Calificación enviada correctamente');
+      Alert.alert(
+        "Calificación enviada",
+        `Calificaste al conductor con ${rating} estrellas.\nComentario: ${
+          ratingComment || "Ninguno"
+        }`,
+        [{ text: "Aceptar", onPress: () => setModalVisibleRating(false) }]
+      );
+    } catch (error) {
+      console.error("Error al enviar calificación:", error);
+      Alert.alert("Error", "No se pudo enviar la calificación.");
+      return;
+    }
     setRating(0); // Reiniciar la calificación
     setRatingComment(""); // Limpiar el comentario
   };
@@ -74,7 +210,7 @@ export default function DriverProfile() {
       />
       <View style={styles.infoContainer}>
         <Text style={styles.infoText}>
-          Daguilastro Ramirez{"\n"}Tel: 316 312 6976{"\n"}Placa: DAG 123
+          {travelData.user?.name}{"\n"}Tel: {travelData.user?.phoneNumber?.replace(/^\+57/, '')}{"\n"}runtNumber: {travelData.driver?.runtNumber}
         </Text>
       </View>
 
@@ -82,10 +218,11 @@ export default function DriverProfile() {
         <TouchableOpacity
           style={styles.optionButton}
           onPress={() => {
-            router.push("/historial");
+            fetchCalifications();
+            router.push("/calification");
           }}
         >
-          <Text style={styles.buttonText}>Ver historial de viajes</Text>
+          <Text style={styles.buttonText}>Ver calificaciones</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

@@ -67,7 +67,7 @@ export const ConfigVariables = {
       },
       getAll: {
         method: 'GET',
-        url: `${url}/calification/`,
+        url: `${url}/calification/all/`,
       },
       getProm: {
         method: 'GET',
