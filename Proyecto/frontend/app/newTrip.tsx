@@ -1,14 +1,48 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTheme } from "./context/themeContext";
+import { Trip } from './types/trip.types';
+import { Driver } from "./types/driver.types";
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { User } from "./types/user.types";
 
 export default function Page() {
   const { theme } = useTheme(); //para cambiar el tema
 
-  const router = useRouter(); // para cambiar de pantalla
+  // State to store travel data
+  const [travelData, setTravelData] = useState<{
+    driver: Driver | null;
+    travel: Trip | null;
+    user: User | null;
+  }>({
+    driver: null,
+    travel: null,
+    user: null,
+  });
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // Function to load travel data from AsyncStorage
+  const loadTravelData = async () => {
+    try {
+      const data = await AsyncStorage.getItem('currentTravelData');
+      if (data) {
+        setTravelData(JSON.parse(data));
+        console.log("Travel data loaded successfully");
+      }
+    } catch (error) {
+      console.error("Failed to load travel data:", error);
+    }
+  };
+
+  // Load travel data when component mounts
+  useEffect(() => {
+    loadTravelData();
+  }, []);
+
+  const router = useRouter(); // para cambiar de pantalla
 
   const handleCancel = () => {
     setShowCancelConfirm(true);
@@ -27,6 +61,47 @@ export default function Page() {
     setShowCancelConfirm(false);
   };
 
+  const renderDriverCard = () => {
+    if (!travelData.driver) {
+      return (
+        <View style={styles.driverCard}>
+          <View style={styles.driverIcon}>
+            <Ionicons name="person-outline" size={40} color="gray" />
+          </View>
+          <View style={styles.driverInfo}>
+            <Text style={styles.driverName}>Sin conductor asignado</Text>
+            <Text style={styles.carInfo}>
+              Aún no se ha asignado un conductor para este viaje
+            </Text>
+            <View style={styles.ratingContainer}>
+              <Ionicons name="alert-circle-outline" size={20} color="#888" />
+              <Text style={styles.rating}>Pendiente</Text>
+            </View>
+          </View>
+        </View>
+      );
+    }
+    else {
+      return (
+        <View style={styles.driverCard}>
+          <View style={styles.driverIcon}>
+            <Ionicons name="person" size={40} color="black" />
+          </View>
+          <View style={styles.driverInfo}>
+            <Text style={styles.driverName}>{travelData.user?.name || 'Nombre no disponible'}</Text>
+            <Text style={styles.carInfo}>
+              Piloto de elite • {travelData.driver.runtNumber}
+            </Text>
+            <View style={styles.ratingContainer}>
+              <Ionicons name="star" size={20} color="#FFD700" />
+              <Text style={styles.rating}>{travelData.driver.calification}</Text>
+            </View>
+          </View>
+        </View>
+      );
+    }
+  };
+
   return (
     <View
       style={[
@@ -34,89 +109,70 @@ export default function Page() {
         { backgroundColor: theme === "dark" ? "#2d2c24" : "white" },
       ]}
     >
-      <View style={styles.header}>
-        <Ionicons name="car" size={24} 
-        color={theme === "dark" ? "#AAAAAA" : "#888888"}
-         />
-        <Text
-          style={[styles.headerText, theme === "dark" && styles.headerText2]}
-        >
-          NUEVO VIAJE
-        </Text>
-      </View>
-
-      <View style={styles.driverCard}>
-        <View style={styles.driverIcon}>
-          <Ionicons name="person" size={40} color="black" />
-        </View>
-        <View style={styles.driverInfo}>
-          <Text style={styles.driverName}>Juan Pérez</Text>
-          <Text style={styles.carInfo}>Toyota Corolla • ABC-123</Text>
-          <View style={styles.ratingContainer}>
-            <Ionicons name="star" size={20} color="#FFD700" />
-            <Text style={styles.rating}>4.8</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.meetingPoint}>
-        <Text style={styles.meetingPointTitle}>Punto de encuentro:</Text>
-        <Text style={styles.meetingPointValue}>
-          Corferias Universidad Nacional
-        </Text>
-      </View>
-      <View style={styles.meetingPoint}>
-        <Text style={styles.meetingPointTitle}>Destino:</Text>
-        <Text style={styles.meetingPointValue}>Facatativá</Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push("/driverProfile")}
-      >
-        <Text style={styles.buttonText}>Ver perfil del conductor</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push("/chat")}
-      >
-        <Text style={styles.buttonText}>Contactar</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.buttonGreen} onPress={handleCancel}>
-        <Text style={styles.buttonText}>Programar viaje</Text>
-      </TouchableOpacity>
-
-
-      <View style={styles.tripInfoContainer}>
-        <View style={styles.infoItem}>
-          <Ionicons name="grid-outline" size={24} color="#0088FF" />
-          <Text style={styles.infoText}>Asientos disponibles : 3</Text>
-        </View>
-
-        <View style={styles.infoItem}>
-          <Ionicons name="calendar-outline" size={24} color="#0088FF" />
-          <Text style={styles.infoText}>
-            Fecha y hora: 28/02/24 a las 16:45
+      <ScrollView showsVerticalScrollIndicator={true} contentContainerStyle={{ paddingBottom: 20 }}>
+        <View style={styles.header}>
+          <Ionicons name="car" size={24} 
+          color={theme === "dark" ? "#AAAAAA" : "#888888"}
+           />
+          <Text
+            style={[styles.headerText, theme === "dark" && styles.headerText2]}
+          >
+            NUEVO VIAJE
           </Text>
         </View>
 
-        <View style={styles.infoItem}>
-          <Ionicons name="time-outline" size={24} color="#0088FF" />
-          <Text style={styles.infoText}>Tiempo estimado: 35 min</Text>
+        {renderDriverCard()}
+
+        <View style={styles.meetingPoint}>
+          <Text style={styles.meetingPointTitle}>Punto de encuentro:</Text>
+          <Text style={styles.meetingPointValue}>
+            {travelData.travel?.origin || 'Punto no disponible'}
+          </Text>
+        </View>
+        <View style={styles.meetingPoint}>
+          <Text style={styles.meetingPointTitle}>Destino:</Text>
+          <Text style={styles.meetingPointValue}>{travelData.travel?.destination}</Text>
         </View>
 
-        <View style={styles.infoItem}>
-          <Ionicons name="cash-outline" size={24} color="#0088FF" />
-          <Text style={styles.infoText}>Costo total: $14.000</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.push("/driverProfile")}
+        >
+          <Text style={styles.buttonText}>Ver perfil del conductor</Text>
+        </TouchableOpacity>
 
-        <View style={styles.infoItem}>
-          <Ionicons name="location-outline" size={24} color="#0088FF" />
-          <Text style={styles.infoText}>Distancia: 5.2 km</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.push("/chat")}
+        >
+          <Text style={styles.buttonText}>Contactar</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.buttonGreen} onPress={handleCancel}>
+          <Text style={styles.buttonText}>Programar viaje</Text>
+        </TouchableOpacity>
+
+
+        <View style={styles.tripInfoContainer}>
+
+          <View style={styles.infoItem}>
+            <Ionicons name="calendar-outline" size={24} color="#0088FF" />
+            <Text style={styles.infoText}>
+              Fecha y hora: {travelData.travel?.beginDate.toString() || 'Fecha no disponible'}
+            </Text>
+          </View>
+
+          <View style={styles.infoItem}>
+            <Ionicons name="cash-outline" size={24} color="#0088FF" />
+            <Text style={styles.infoText}>Costo total: ${travelData.travel?.price} COP</Text>
+          </View>
+
+          <View style={styles.infoItem}>
+            <Ionicons name="location-outline" size={24} color="#0088FF" />
+            <Text style={styles.infoText}>Distancia: 5.2 km</Text>
+          </View>
         </View>
-      </View>
+      </ScrollView>
 
       {showCancelConfirm && (
         <View style={styles.modalOverlay}>

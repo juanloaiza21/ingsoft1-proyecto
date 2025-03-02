@@ -19,6 +19,10 @@ export const ConfigVariables = {
         method: 'PUT',
         url: `${url}/users/`,
       },
+      getOne: {
+        method: 'GET',
+        url: `${url}/users/`,
+      },
     },
     auth: {
       login: {
