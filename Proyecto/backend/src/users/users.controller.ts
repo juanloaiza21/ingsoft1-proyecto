@@ -24,6 +24,12 @@ export class UsersController {
     return this.usersService.getUsers();
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  getUserById(@Param('id') id: string) {
+    return this.usersService.findOneById(id);
+  }
+
   @Post()
   createUser(@Body() user: CreateUserDto) {
     return this.usersService.createUser(user);
