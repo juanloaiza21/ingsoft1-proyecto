@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "./context/themeContext";
 import {
   View,
@@ -10,10 +10,12 @@ import {
   Image,
   ActivityIndicator,
   Button,
-  TextInput
+  TextInput,
+  Animated
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { ConfigVariables } from "./config/config";
 import { ApiResponse } from "./types/api-response.type";
@@ -131,9 +133,8 @@ const fetchTravelOptions = async (): Promise<TravelOption[]> => {
       setStarDropdownVisible(false);
     }
   };
-
-  // Función para manejar la acción al presionar una opción de viaje
-  const handleTravelPress = async (item: TravelOption) => {
+   // Función para manejar la acción al presionar una opción de viaje
+   const handleTravelPress = async (item: TravelOption) => {
     try {
       if (!item.driverId) {
         try {
@@ -206,11 +207,47 @@ const fetchTravelOptions = async (): Promise<TravelOption[]> => {
       </TouchableOpacity>
     </View>
   );
-
+  const logoAnim = useRef(new Animated.Value(300)).current;
+  
+  useEffect(() => {
+    // Animate the logo from off-screen right (300) to its final position (0) with a bounce effect
+    Animated.spring(logoAnim, {
+      toValue: 0,
+      friction: 4,
+      tension: 5,
+      useNativeDriver: true,
+    }).start();
+  }, []);
   return (
-    <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "white" }]}
+    <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "#024059" }]}
     >
+      {/* Top Bar */}
+      <View style={styles.topBar}>
+        {/* Left: App Name Image */}
+        <Image
+          source={require("../assets/images/Nombre (2).png")} // Replace with your app name image
+          style={styles.appNameImage}
+          resizeMode="contain"
+        />
+        {/* Right: Animated Logo */}
+        <Animated.Image
+          source={
+            theme === "dark"
+              ? require("../assets/images/icon-black.png")
+              : require("../assets/images/icon-black.png")
+          }
+          style={[
+            styles.animatedLogo,
+            { transform: [{ translateX: logoAnim }] },
+          ]}
+          resizeMode="contain"
+        />
+      </View>
       {/* Header con barra de búsqueda y botón de estrella */}
+      <View style={styles.textnormalcontainer}>
+        <Text style={styles.textnormal}>Solicita tu viaje   </Text>
+        <Ionicons name="car-outline" size={40} color={theme === "dark" ? "#fff" : "#fff"} />
+      </View>
       <View style={styles.headerContainer}>
         <TextInput
           style={[styles.title, theme === "dark" && styles.title2]}
@@ -221,25 +258,7 @@ const fetchTravelOptions = async (): Promise<TravelOption[]> => {
           returnKeyType="search"
           placeholderTextColor={theme === "dark" ? "#AAAAAA" : "#888888"}
         />
-        <TouchableOpacity style={styles.starButton} onPress={toggleStarDropdown}>
-          <Text style={styles.starIcon}>★</Text>
-        </TouchableOpacity>
       </View>
-
-      {/* Dropdown de opciones de la estrella */}
-      {starDropdownVisible && (
-        <View style={styles.starDropdown}>
-          {loadingStar ? (
-            <ActivityIndicator size="small" color="#007AFF" />
-          ) : (
-            starOptions.map(option => (
-              <TouchableOpacity key={option.id} style={styles.starOption}>
-                <Text style={styles.starOptionText}>{option.name}</Text>
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
-      )}
 
       {/* Lista de opciones de viaje */}
       <View style={styles.travelOptionsContainer}>
@@ -266,18 +285,55 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: '#fff',
   },
+  appNameImage: {
+    width: 120, // Adjust as needed
+    height: 40, // Adjust as needed
+    marginHorizontal: 20,
+  },
+topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 0,
+    borderRadius: 20,
+    marginHorizontal: -10,
+    marginBottom: 10,
+  },
+animatedLogo: {
+    width: 60, // Adjust as needed
+    height: 60, // Adjust as needed
+    marginHorizontal: 20,
+  },
   headerContainer: {
     position: 'relative',
     marginBottom: 10,
   },
-  title: {
-    height: 45,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
+  textnormal: {fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 0,
+    textAlign: "left",
+    color: "white",
+    textAlignVertical: "center",
+    
+  },
+  textnormalcontainer: {marginVertical: 20,
+    flexDirection: "row",
+    alignContent: "flex-start",
+    backgroundColor: "#1B8CA6",
+    borderRadius: 20,
+    marginBottom: 40,
     paddingHorizontal: 15,
-    paddingRight: 45, // Espacio para el botón de estrella
-    fontSize: 16,
+    paddingVertical: 5,
+  },
+  title: {
+      backgroundColor: "white",
+      height: 50,
+      borderWidth: 1,
+      borderRadius: 35,
+      paddingHorizontal: 10,
+      marginBottom: 15,
+      justifyContent: "center",
+      borderColor: "#fc9414",
   },
   title2: {
     color : "white",
@@ -298,32 +354,6 @@ const styles = StyleSheet.create({
     paddingRight: 45, // Espacio para el botón de estrella
     fontSize: 16,
   },
-  starButton: {
-    position: 'absolute',
-    right: 10,
-    top: 7,
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  starIcon: {
-    fontSize: 24,
-    color: '#FFD700',
-  },
-  starDropdown: {
-    backgroundColor: '#f2f2f2',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  starOption: {
-    paddingVertical: 5,
-  },
-  starOptionText: {
-    fontSize: 16,
-    color: '#333',
-  },
   travelOptionsContainer: {
     flex: 1,
   },
@@ -335,11 +365,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: 15,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    borderWidth: 0,
     borderRadius: 8,
     marginBottom: 10,
-    backgroundColor: "#fafafa",
+    backgroundColor: "white",
   },
   travelTextContainer: {
     flex: 1,
@@ -355,7 +384,7 @@ const styles = StyleSheet.create({
     color: "#555",
   },
   verViajeButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#fc9414",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 5,

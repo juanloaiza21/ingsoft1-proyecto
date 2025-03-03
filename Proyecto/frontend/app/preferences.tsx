@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   buttonText: {
-    color: "black",
+    color: "white",
     fontSize: 16,
     fontWeight: "bold",
   },
