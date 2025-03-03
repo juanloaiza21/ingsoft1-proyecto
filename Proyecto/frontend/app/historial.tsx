@@ -14,51 +14,84 @@ import {
   Button,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Trip } from "./types/trip.types";
+import axios from "axios";
+import { ConfigVariables } from "./config/config";
+import { ApiResponse } from "./types/api-response.type";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-interface Trip {
-  id: string;
-  driverImage: string;
-  duration: string;
-  price: string;
-}
 
 // Función simulada para obtener el historial de viajes desde el backend
-const fetchTrips = async (): Promise<Trip[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        {
-          id: "1",
-          driverImage: "https://via.placeholder.com/100",
-          duration: "1h 30m",
-          price: "$20",
-        },
-        {
-          id: "2",
-          driverImage: "https://via.placeholder.com/100",
-          duration: "2h 15m",
-          price: "$30",
-        },
-        {
-          id: "3",
-          driverImage: "https://via.placeholder.com/100",
-          duration: "45m",
-          price: "$15",
-        },
-      ]);
-    }, 1000);
-  });
-};
 
 export default function Historial(): JSX.Element {
 
   const { theme } = useTheme(); //para cambiar el tema
-
+  
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [access_token, setAccess_token] = useState<string>('');
+  const [refresh_token, setRefresh_token] = useState<string>('');
   const router = useRouter();
+
+    const getTokens = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      setAccess_token(accessToken ?? '');
+      setRefresh_token(refreshToken ?? '');
+    } catch (error) {
+      console.error('Error al recuperar tokens:', error);
+      return { accessToken: null, refreshToken: null };
+    }
+  };
+  useEffect(() => {
+    const loadTokens = async () => {
+      await getTokens();
+      if (access_token && refresh_token) {
+        console.log('Tokens recuperados correctamente');
+      }
+    };
+    loadTokens();
+  }, []);
+
+  
+
+  const fetchTrips = async (): Promise<Trip[]> => {
+    const trips: Trip[] = [];
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      console.log('Access token:', accessToken);
+      let user1Petition = await axios.request({
+        method: ConfigVariables.api.auth.checkJWT.method,
+        url: ConfigVariables.api.auth.checkJWT.url,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      let user:ApiResponse = user1Petition.data;
+      console.log('User:', user);
+      const petition = await axios.request({
+        method: ConfigVariables.api.historical.tripsUser.method,
+        url: ConfigVariables.api.historical.tripsUser.url+user.result.userId,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+      const data: ApiResponse = petition.data;
+      const tripsData: Trip[] = data.result;
+      tripsData.forEach((trip) => {
+        if(trip.status === 'COMPLETED')
+        trips.push(trip);
+      });
+    } catch (error) {
+      console.error("Error fetching trips", error);
+    } finally {
+      return trips;
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -90,7 +123,11 @@ export default function Historial(): JSX.Element {
       style={styles.tripItem}
       onPress={() => handleTripPress(item)}
     >
-      <Text style={styles.tripText}>Viaje {item.id}</Text>
+      <Text style={styles.tripText}>Viaje: {item.id}</Text>
+      <Text>Fecha de inicio: {item.beginDate.toString()}</Text>
+      <Text>Fecha de fin: {item.endDate.toString()}</Text>
+      <Text>Precio: {item.price}</Text>
+      <Text>Estado: {item.status}</Text>
     </TouchableOpacity>
   );
 
@@ -126,13 +163,13 @@ export default function Historial(): JSX.Element {
                   style={styles.driverImageContainer}
                 >
                   <Image
-                    source={{ uri: selectedTrip.driverImage }}
-                    style={styles.driverImage}
+                  source={require('../assets/images/Daguilastrico.jpeg')}
+                  style={styles.driverImage}
                   />
                 </TouchableOpacity>
                 <View style={styles.detailsContainer}>
                   <Text style={styles.detailText}>
-                    Duración: {selectedTrip.duration}
+                    Finalizado: {selectedTrip.endDate.toString()}
                   </Text>
                   <Text style={styles.detailText}>
                     Precio: {selectedTrip.price}
