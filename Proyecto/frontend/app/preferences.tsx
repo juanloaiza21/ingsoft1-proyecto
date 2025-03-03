@@ -1,150 +1,192 @@
-import React, { useState } from "react";
-import TravelPreferencesModal from "./components/travelPreferencesModal";
-import AppearanceModal from "./components/appearanceModal";
-import { useTheme } from "./context/themeContext";
-import NotificationsModal from "./components/notificationsModal";
+import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  Alert,
   Image,
+  Animated,
 } from "react-native";
 
+// Importar los componentes modales
+import AppearanceModal from "../app/components/appearanceModal";
+import NotificationsModal from "../app/components/notificationsModal";
+import TravelPreferencesModal from "../app/components/travelPreferencesModal";
+
 export default function Preferences() {
-  // estado pa controlar el modal de notificaciones
-  const [notificationsModalVisible, setNotificationsModalVisible] =
-    useState(false);
+  const router = useRouter();
+  const logoAnim = useRef(new Animated.Value(300)).current;
 
-  const { theme } = useTheme(); //para cambiar el tema
+// Estados para controlar la visibilidad de los modales
+const [appearanceModalVisible, setAppearanceModalVisible] = useState(false);
+const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
+const [travelPreferencesModalVisible, setTravelPreferencesModalVisible] = useState(false);
 
-  //estados para controlar el modal de apariencia
-  const [modalVisible, setModalVisible] = useState(false);
-  const [appTheme, setAppTheme] = useState("light");
-
-  // const router = useRouter(); // Descomenta si deseas navegar a otra pantalla
-  const [travelModalVisible, setTravelModalVisible] = useState(false);
+  useEffect(() => {
+    // Animación de entrada del logo
+    Animated.spring(logoAnim, {
+      toValue: 0,
+      friction: 4,
+      tension: 5,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   return (
-    <ScrollView
-      contentContainerStyle={[
-        styles.container,
-        { backgroundColor: theme === "dark" ? "#2d2c24" : "white" },
-      ]}
-    >
-      <View style={styles.headerContainer}>
-        <Text style={[styles.title, theme === "dark" && styles.title2]}>
-          Preferencias{"\n"}de usuario
-          
-        </Text> 
+    <View style={styles.container}>
+      {/* Barra superior con logo */}
+      <View style={styles.topBar}>
         <Image
-          source={require("../assets/images/icon-preferences.png")}
-          style={styles.image}
+          source={require("../assets/images/Nombre.png")}
+          style={styles.appNameImage}
+          resizeMode="contain"
+        />
+        <Animated.Image
+          source={require("../assets/images/icon-black.png")}
+          style={[styles.animatedLogo, { transform: [{ translateX: logoAnim }] }]}
+          resizeMode="contain"
         />
       </View>
 
-      <TouchableOpacity
-        style={styles.optionButton}
-        onPress={() => setTravelModalVisible(true)}
-      >
-        <Text style={styles.optionText}>Preferencias de viaje</Text>
-      </TouchableOpacity>
+      {/* Contenedor central */}
+      <View style={styles.contentContainer}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.title}>Preferencias</Text>
+        </View>
 
-      {/* Modal de Preferencias de Viaje */}
-      <TravelPreferencesModal
-        visible={travelModalVisible}
-        onClose={() => setTravelModalVisible(false)}
+        <View style={styles.buttonContainer}>
+          <LinearGradient colors={["#F2A74B", "#F2A74B"]} style={styles.gradientButton}>
+            <TouchableOpacity
+              style={styles.optionButtonContent}
+              onPress={() => setTravelPreferencesModalVisible(true)}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons name="car" size={24} color="white" />
+              </View>
+              <Text style={styles.buttonText}>Preferencias de viaje</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+
+          <LinearGradient colors={["#F2A74B", "#F2A74B"]} style={styles.gradientButton}>
+            <TouchableOpacity
+              style={styles.optionButtonContent}
+              onPress={() => setNotificationsModalVisible(true)}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons name="notifications" size={24} color="white" />
+              </View>
+              <Text style={styles.buttonText}>Notificaciones</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+
+          <LinearGradient colors={["#F2A74B", "#F2A74B"]} style={styles.gradientButton}>
+            <TouchableOpacity
+              style={styles.optionButtonContent}
+              onPress={() => setAppearanceModalVisible(true)}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons name="color-palette" size={24} color="white" />
+              </View>
+              <Text style={styles.buttonText}>Apariencia</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+        </View>
+      </View>
+      {/* Modales */}
+      <AppearanceModal 
+        visible={appearanceModalVisible} 
+        onClose={() => setAppearanceModalVisible(false)} 
       />
-
-      <TouchableOpacity
-        style={styles.optionButton}
-        onPress={() => setNotificationsModalVisible(true)}
-      >
-        <Text style={styles.optionText}>Notificaciones</Text>
-      </TouchableOpacity>
-
-      <NotificationsModal
-        visible={notificationsModalVisible}
-        onClose={() => setNotificationsModalVisible(false)}
+      <NotificationsModal 
+        visible={notificationsModalVisible} 
+        onClose={() => setNotificationsModalVisible(false)} 
       />
-
-      <TouchableOpacity
-        style={styles.optionButton}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text style={styles.optionText}>Apariencia</Text>
-      </TouchableOpacity>
-
-      <AppearanceModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+      <TravelPreferencesModal 
+        visible={travelPreferencesModalVisible} 
+        onClose={() => setTravelPreferencesModalVisible(false)} 
       />
-    </ScrollView>
+    
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    flexDirection: "row", // Alinea los elementos en fila (horizontalmente)
-    alignItems: "center", // Centra verticalmente el texto y la imagen
-    justifyContent: "space-between", // Separa el título y la imagen
-    width: "90%", // Ajusta el ancho para que no ocupe toda la pantalla
-    marginBottom: 20, // Espaciado inferior
-  },
   container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#f5f5f5",
     alignItems: "center",
+    flex: 1,
+    paddingHorizontal: 20,
+    backgroundColor: "#024059",
+  },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    paddingVertical: 10,
+    backgroundColor: "#024059",
+  },
+  appNameImage: {
+    width: 120,
+    height: 40,
+  },
+  animatedLogo: {
+    width: 60,
+    height: 60,
+  },
+  contentContainer: {
+    width: "90%",
+    backgroundColor: "#1B8CA6",
+    borderRadius: 40,
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    marginTop: 90,
+    borderColor: "black",
+    borderWidth: 0.7,
+  },
+  headerContainer: {
+    alignItems: "center",
+    width: "100%",
+    marginBottom: 20,
+    marginTop: 10,
   },
   title: {
-    fontSize: 18, // Un poco más grande
-    fontWeight: "bold",
-    color: "#333", // Color más elegante y menos básico que el negro puro
-    marginRight: 0, // Espacio con la imagen
-    textTransform: "uppercase", // Convierte el texto en mayúsculas
-    letterSpacing: 1, // Espacia un poco las letras para un diseño más limpio
-    textShadowColor: "rgba(0, 0, 0, 0.2)", // Sombra ligera
-    textShadowOffset: { width: 2, height: 2 }, // Posición de la sombra
-    textShadowRadius: 3, // Difuminado de la sombra
-    marginBottom: 70,
-    marginLeft: 15,
-    marginTop: 65,
-  },
-
-  title2: {
-    fontSize: 18, // Un poco más grande
+    fontSize: 26,
     fontWeight: "bold",
     color: "white",
-    marginRight: 0, // Espacio con la imagen
-    textTransform: "uppercase", // Convierte el texto en mayúsculas
-    letterSpacing: 1, // Espacia un poco las letras para un diseño más limpio
-    marginBottom: 70,
-    marginLeft: 15,
-    marginTop: 65,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 3,
+    marginBottom: 22,
   },
-  optionButton: {
-    backgroundColor: "#007bff",
-    padding: 20,
-    borderRadius: 10,
-    width: "60%",
+  buttonContainer: {
+    width: "100%",
     alignItems: "center",
-    marginVertical: 25,
-    borderWidth: 3, // Grosor del borde
-    borderColor: "black", // Color del borde negro
   },
-  optionText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "500",
+  gradientButton: {
+    borderRadius: 10,
+    marginVertical: 10,
+    width: "100%",
+    overflow: "hidden",
   },
-  
-  image: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
-    marginTop: 20,
-}}
-);
+  optionButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 15,
+  },
+  iconContainer: {
+    borderRadius: 20,
+    padding: 5,
+    marginRight: 10,
+    borderWidth: 0,
+  },
+  buttonText: {
+    color: "black",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+});
