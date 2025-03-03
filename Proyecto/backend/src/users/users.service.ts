@@ -61,6 +61,19 @@ export class UsersService {
     }
   }
 
+  async findOneById(id: string) {
+    try {
+      return await this.prisma.user.findFirst({
+        where: {
+          id,
+        },
+      });
+    } catch (error) {
+      this.logger.error(error);
+      throw new HttpException('Error finding user', 400);
+    }
+  }
+
   async getUsers() {
     try {
       return await this.prisma.user.findMany();

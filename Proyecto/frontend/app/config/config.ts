@@ -19,6 +19,10 @@ export const ConfigVariables = {
         method: 'PUT',
         url: `${url}/users/`,
       },
+      getOne: {
+        method: 'GET',
+        url: `${url}/users/`,
+      },
     },
     auth: {
       login: {
@@ -30,7 +34,7 @@ export const ConfigVariables = {
         url: `${url}/auth/logout/`,
       },
       checkJWT: {
-        method: 'POST',
+        method: 'GET',
         url: `${url}/auth/profile/`,
       },
       refreshJWT: {
@@ -55,6 +59,10 @@ export const ConfigVariables = {
         method: 'GET',
         url: `${url}/payment/result-payment/`,
       },
+      getBill: {
+        method: 'GET',
+        url: `${url}/payment/bill/`,
+      },
     },
     calification: {
       create: {
@@ -63,7 +71,7 @@ export const ConfigVariables = {
       },
       getAll: {
         method: 'GET',
-        url: `${url}/calification/`,
+        url: `${url}/calification/all/`,
       },
       getProm: {
         method: 'GET',
