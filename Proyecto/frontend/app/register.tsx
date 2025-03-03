@@ -1,6 +1,6 @@
 // app/register.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Button, Pressable, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Button, Pressable, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MsgBox } from './styles';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -137,46 +137,59 @@ export default function Register() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Registro de Usuario</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Numero de identificacion"
-        value={id}
-        onChangeText={setId}
-      />
-      {/* Campo Nombre */}
-      <TextInput
-        style={styles.input}
-        placeholder="Nombre"
-        value={name}
-        onChangeText={setName}
-      />
-      {/* Campo Correo */}
-      <TextInput
-        style={styles.input}
-        placeholder="Correo"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Celular"
-        value={phoneNumber}
-        onChangeText={setPhoneNumber}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      {/* BirthDate */}
-      <View>
-        <Text style = {styles.soft}>
-          Fecha de Nacimiento
-        </Text>
-        {show && (
-          
-          <DateTimePicker
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Registro de Usuario</Text>
+
+        <View style={styles.inputContainer}>
+          <Text style={[styles.label, id && styles.labelFilled]}>Número de identificación</Text>
+          <TextInput
+            style={[styles.input, id && styles.inputFilled]}
+            placeholder="Ingresa tu número de ID"
+            value={id}
+            onChangeText={setId}
+            keyboardType="numeric"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={[styles.label, name && styles.labelFilled]}>Nombre</Text>
+          <TextInput
+            style={[styles.input, name && styles.inputFilled]}
+            placeholder="Ingresa tu nombre completo"
+            value={name}
+            onChangeText={setName}
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={[styles.label, email && styles.labelFilled]}>Correo electrónico</Text>
+          <TextInput
+            style={[styles.input, email && styles.inputFilled]}
+            placeholder="ejemplo@correo.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={[styles.label, phoneNumber && styles.labelFilled]}>Celular</Text>
+          <TextInput
+            style={[styles.input, phoneNumber && styles.inputFilled]}
+            placeholder="Ingresa tu número de celular"
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+            keyboardType="numeric"
+          />
+        </View>
+
+        {/* Campo de Fecha de Nacimiento con animación */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Fecha de Nacimiento</Text>
+          {show && (
+            <DateTimePicker
             mode='date'
             display='spinner'
             value={birthDate}
@@ -195,24 +208,30 @@ export default function Register() {
                   /> 
                 </Pressable>
         )}
-      </View>
-      {/* Campo Contraseña */}
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      {/* Campo Confirmar Contraseña */}
-      <TextInput
-        style={styles.input}
-        placeholder="Confirmar Contraseña"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-      />
-      <MsgBox type={messageType}>{message}</MsgBox>
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={[styles.label, password && styles.labelFilled]}>Contraseña</Text>
+          <TextInput
+            style={[styles.input, password && styles.inputFilled]}
+            placeholder="Ingresa tu contraseña"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={[styles.label, confirmPassword && styles.labelFilled]}>Confirmar Contraseña</Text>
+          <TextInput
+            style={[styles.input, confirmPassword && styles.inputFilled]}
+            placeholder="Confirma tu contraseña"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+          />
+        </View>
+        <MsgBox type={messageType}>{message}</MsgBox>
       <TouchableOpacity 
         style={[styles.button, !isFormValid() && styles.buttonDisabled]} 
         onPress={() => {
@@ -229,65 +248,71 @@ export default function Register() {
       >
         <Text style={styles.buttonText}>Registrarse</Text>
       </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.secondaryButtonText}>Cancelar</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
-
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    backgroundColor: '#fff'
-  },
-  title: {
-    fontSize: 24,
-    marginBottom: 20,
-    textAlign: 'center'
-  },
+  scrollContainer: { flexGrow: 1, backgroundColor: '#024059' },
+  container: { flex: 1, padding: 24, backgroundColor: '#024059' },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 30, textAlign: 'center', color: '#FC9414' },
+  inputContainer: { marginBottom: 20 },
+  label: { marginBottom: 8, fontSize: 16, fontWeight: '600', color: '#FC9414', paddingLeft: 4 },
+  labelFilled: { color: '#FC9414' }, // Color cuando se llena el campo
   input: {
-    height: 50,
-    borderColor: '#ccc',
+    height: 54,
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 15
-  },
-  label: {
-    marginBottom: 5,
+    borderColor: '#F2C572',
+    borderRadius: 30,
+    paddingHorizontal: 20,
     fontSize: 16,
-    fontWeight: 'bold'
+    color: '#0D0D0D',
   },
-  soft: {
-    marginBottom: 5,
-    fontSize: 16,
+  inputFilled: { backgroundColor: '#F2C572' }, // Color cuando el campo está lleno
+  datePickerButton: {
+    height: 54,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#F2C572',
+    borderRadius: 30,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
   },
-  pickerContainer: {
-    borderColor: '#ccc',
-    borderWidth: 20,
-    borderRadius: 5,
-    marginBottom: 15,
-    overflow: 'hidden'
-  },
-  picker: {
-    height: 50,
-    width: '100%'
-  },
+  dateText: { fontSize: 16, color: '#0D0D0D' },
   button: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 15,
-    borderRadius: 5,
+    backgroundColor: '#F2A74B',
+    paddingVertical: 16,
+    borderRadius: 30,
     alignItems: 'center',
-    marginTop: 10
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  buttonDisabled: {
-    backgroundColor: '#CCCCCC'
+  buttonDisabled: { backgroundColor: '#BFBFBF', opacity: 0.8 },
+  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#F2C572',
+    paddingVertical: 16,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginTop: 16,
   },
-  buttonText: {
-    color: '#fff',
+  secondaryButtonText: {
+    color: '#FC9414',
     fontSize: 18,
-    fontWeight: 'bold'
-  }
+    fontWeight: '600',
+  },
 });
