@@ -115,7 +115,7 @@ export const ConfigVariables = {
       },
       driverCreateTrip: {
         method: 'POST',
-        url: `${url}/trip/driver-create-trip/`,
+        url: `${url}/trip/driver-solicitate-trip/`,
       },
       getAll: {
         method: 'GET',
