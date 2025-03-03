@@ -20,7 +20,7 @@ export default function Layout(): JSX.Element {
         </Stack>
         <BottomNavBar />
       </SafeAreaView>
-      <StatusBar style="light" backgroundColor="#024059" />
+      <StatusBar hidden />
     </ThemeProvider>
   );
 }

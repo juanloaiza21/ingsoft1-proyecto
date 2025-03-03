@@ -40,7 +40,7 @@ const [travelPreferencesModalVisible, setTravelPreferencesModalVisible] = useSta
       {/* Barra superior con logo */}
       <View style={styles.topBar}>
         <Image
-          source={require("../assets/images/Nombre.png")}
+          source={require("../assets/images/Nombre (2).png")}
           style={styles.appNameImage}
           resizeMode="contain"
         />
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
-    paddingVertical: 10,
+    paddingVertical: 0,
     backgroundColor: "#024059",
   },
   appNameImage: {

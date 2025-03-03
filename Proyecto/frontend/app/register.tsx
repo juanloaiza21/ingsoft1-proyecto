@@ -1,35 +1,140 @@
-import React, { useState, useEffect } from 'react'; 
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Pressable, Platform, ScrollView } from 'react-native';
+// app/register.tsx
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Button, Pressable, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { MsgBox } from './styles';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Role } from './enums/role.enum';
 import axios from 'axios';
 import { ConfigVariables } from './config/config';
 
 export default function Register() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [id, setId] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [birthDate, setBirthDate] = useState<Date | null>(null);
-  const [show, setShow] = useState(false);
-  const [isBirthDateSelected, setIsBirthDateSelected] = useState(false); // Nuevo estado para animación
+  const [name, setName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>(''); // New state for password confirmation
+  const [id, setId] = useState<string>('');
+  const [message, setMessage] = useState<string>("");
+  const [messageType, setMessageType] = useState<string>("");
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [birthDate, setBirthDate] = useState<Date>(new Date());
+  const [show, setShow] = useState<boolean>(false);
 
-  const toggleDatePicker = () => setShow(!show);
+  // Función para validar que todos los campos estén completos
+  // Función para validar que todos los campos estén completos
+  const isFormValid = (): boolean => {
+    if (!name || !email || !password || !confirmPassword || !phoneNumber) return false;
+    if (phoneNumber && /\D/.test(phoneNumber)) return false
+    if (name && /\d/.test(name)) return false;
+    if (password !== confirmPassword) return false;
+    
+    return true;
+  };
 
-  const onChange = ({ type }, selectedDate) => {
-    if (type === "set") {
-      setBirthDate(selectedDate);
-      setIsBirthDateSelected(true); // Se ha seleccionado una fecha
+  useEffect(() => {
+    if (name && /\d/.test(name)) {
+      setMessage("El nombre solo debe contener letras");
+      setMessageType("error");
+    }
+  });
+
+  useEffect(() =>{
+    if (phoneNumber && /\D/.test(phoneNumber)) {
+      setMessage("El teléfono solo debe contener números");
+      setMessageType("error");
+    } else if (phoneNumber && message === "El teléfono solo debe contener números") {
+      setMessage("");
+      setMessageType("");
+    }
+  })
+
+  // Actualizar mensaje basado en el estado del formulario
+  useEffect(() => {
+    if (password && confirmPassword && password !== confirmPassword) {
+      setMessage("Las contraseñas no coinciden");
+      setMessageType("error");
+    } else {
+      setMessage("");
+      setMessageType("");
+    }
+  }, [password, confirmPassword]);
+  // Función para manejar el registro
+  const handleRegister = async (input: {	"id": number,
+    "name": string,
+    "email": string,
+    "phoneNumber": string,
+    "password": string,
+    "birthDate": Date}) => {
+    if (isFormValid()) {
+      // Aquí iría la lógica para enviar los datos al servidor
+      try {
+        const birthDate = input.birthDate.toISOString();
+        const role: Role = Role.USER;
+        await axios.request({
+          method: ConfigVariables.api.user.create.method,
+          url: ConfigVariables.api.user.create.url,
+          data: {
+            id: input.id,
+            name: input.name,
+            email: input.email,
+            phoneNumber: input.phoneNumber,
+            password: input.password,
+            birthDate: birthDate,
+            role: role
+          }
+        });
+        Alert.alert(
+          "Registro exitoso",
+          "Registro completado satisfactoriamente",
+          [
+            { 
+              text: "Aceptar", 
+              onPress: () => router.push("..") 
+            }
+          ]
+        );
+      } catch (error) {
+        setMessage("Error creando usuario");
+        setMessageType("error");
+        console.log(error);
+      }
+      // Mostrar alerta de éxito
+    } else {
+      // Verificar si el problema es que las contraseñas no coinciden
+      if (password && confirmPassword && password !== confirmPassword) {
+        Alert.alert(
+          "Error",
+          "Las contraseñas no coinciden",
+          [{ text: "OK" }]
+        );
+      } else {
+        // Mostrar alerta de error si faltan campos
+        Alert.alert(
+          "Error",
+          "Por favor completa todos los campos requeridos",
+          [{ text: "OK" }]
+        );
+      }
+    }
+  };
+
+  const toggleDatePicker = () => {
+    setShow(!show);
+  };
+
+  const onChange = ( {type}, selectedDate: any) => {
+    if (type == "set") {
+      const currentDate = selectedDate;
+      setBirthDate(currentDate);
       if (Platform.OS === 'android') {
         toggleDatePicker();
+        setBirthDate(currentDate);
       }
     } else {
       toggleDatePicker();
     }
-  };
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -82,25 +187,27 @@ export default function Register() {
 
         {/* Campo de Fecha de Nacimiento con animación */}
         <View style={styles.inputContainer}>
-          <Text style={[styles.label, isBirthDateSelected && styles.labelFilled]}>Fecha de Nacimiento</Text>
+          <Text style={[styles.label /* isBirthDateSelected */ && styles.labelFilled]}>Fecha de Nacimiento</Text>
           {show && (
             <DateTimePicker
-              mode='date'
-              display='spinner'
-              value={birthDate || new Date()}
-              onChange={onChange}
-              maximumDate={new Date()}
-            />
-          )}
-          {!show && (
-            <Pressable onPress={toggleDatePicker}>
-              <View style={[styles.datePickerButton, isBirthDateSelected && styles.inputFilled]}>
-                <Text style={styles.dateText}>
-                  {birthDate ? birthDate.toDateString() : "Selecciona tu fecha"}
-                </Text>
-              </View>
-            </Pressable>
-          )}
+            mode='date'
+            display='spinner'
+            value={birthDate}
+            onChange={onChange}
+            maximumDate={new Date()}
+          />
+        )}
+        {!show && (
+                  <Pressable onPress={toggleDatePicker}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Fecha de Nacimiento"
+                    value={birthDate.toDateString()}
+                    onChangeText={setBirthDate}
+                    editable={false}
+                  /> 
+                </Pressable>
+        )}
         </View>
 
         <View style={styles.inputContainer}>
@@ -124,14 +231,23 @@ export default function Register() {
             secureTextEntry
           />
         </View>
-
-        <TouchableOpacity
-          style={[styles.button, (!name || !email || !password || !confirmPassword || !phoneNumber || !birthDate) && styles.buttonDisabled]}
-          disabled={!name || !email || !password || !confirmPassword || !phoneNumber || !birthDate}
-        >
-          <Text style={styles.buttonText}>Registrarse</Text>
-        </TouchableOpacity>
-
+        <MsgBox type={messageType}>{message}</MsgBox>
+      <TouchableOpacity 
+        style={[styles.button, !isFormValid() && styles.buttonDisabled]} 
+        onPress={() => {
+          handleRegister({
+            id: parseInt(id),
+            name: name,
+            email: email,
+            phoneNumber: phoneNumber,
+            password: password,
+            birthDate: birthDate
+          });
+        }}
+        disabled={!isFormValid()}
+      >
+        <Text style={styles.buttonText}>Registrarse</Text>
+      </TouchableOpacity>
         <TouchableOpacity
           style={styles.secondaryButton}
           onPress={() => router.back()}
