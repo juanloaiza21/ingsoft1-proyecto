@@ -187,7 +187,7 @@ export default function Register() {
 
         {/* Campo de Fecha de Nacimiento con animación */}
         <View style={styles.inputContainer}>
-          <Text style={[styles.label /* isBirthDateSelected */ && styles.labelFilled]}>Fecha de Nacimiento</Text>
+          <Text style={styles.label}>Fecha de Nacimiento</Text>
           {show && (
             <DateTimePicker
             mode='date'
@@ -262,10 +262,10 @@ export default function Register() {
 const styles = StyleSheet.create({
   scrollContainer: { flexGrow: 1, backgroundColor: '#024059' },
   container: { flex: 1, padding: 24, backgroundColor: '#024059' },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 30, textAlign: 'center', color: '#F2C572' },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 30, textAlign: 'center', color: '#FC9414' },
   inputContainer: { marginBottom: 20 },
-  label: { marginBottom: 8, fontSize: 16, fontWeight: '600', color: '#F2C572', paddingLeft: 4 },
-  labelFilled: { color: '#1B8CA6' }, // Color cuando se llena el campo
+  label: { marginBottom: 8, fontSize: 16, fontWeight: '600', color: '#FC9414', paddingLeft: 4 },
+  labelFilled: { color: '#FC9414' }, // Color cuando se llena el campo
   input: {
     height: 54,
     backgroundColor: '#fff',
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   secondaryButtonText: {
-    color: '#F2C572',
+    color: '#FC9414',
     fontSize: 18,
     fontWeight: '600',
   },

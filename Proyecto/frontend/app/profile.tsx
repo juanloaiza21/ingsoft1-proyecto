@@ -479,6 +479,7 @@ const styles = StyleSheet.create({
     width: 120, // Adjust as needed
     height: 40, // Adjust as needed
     marginHorizontal: 0,
+    marginLeft: 20,
   },
 topBar: {
     flexDirection: "row",
@@ -491,10 +492,11 @@ topBar: {
     marginVertical: 5,
     width: "100%",
   },
-animatedLogo: {
+  animatedLogo: {
     width: 60, // Adjust as needed
     height: 60, // Adjust as needed
     marginHorizontal: 0,
+    marginRight: 20,
   },
 
   iconContainer: {

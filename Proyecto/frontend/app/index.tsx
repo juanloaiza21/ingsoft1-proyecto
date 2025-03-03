@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2C572', // Color de fondo cuando el campo está completado
   },
   button: {
-    backgroundColor: "#F2A74B", // Color naranja para el botón
+    backgroundColor: "#FC9414", // Color naranja para el botón
     paddingVertical: 15,
     paddingHorizontal: 25,
     borderRadius: 5,

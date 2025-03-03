@@ -58,7 +58,7 @@ const [travelPreferencesModalVisible, setTravelPreferencesModalVisible] = useSta
         </View>
 
         <View style={styles.buttonContainer}>
-          <LinearGradient colors={["#F2A74B", "#F2A74B"]} style={styles.gradientButton}>
+          <LinearGradient colors={["#FC9414", "#FC9414"]} style={styles.gradientButton}>
             <TouchableOpacity
               style={styles.optionButtonContent}
               onPress={() => setTravelPreferencesModalVisible(true)}
@@ -70,7 +70,7 @@ const [travelPreferencesModalVisible, setTravelPreferencesModalVisible] = useSta
             </TouchableOpacity>
           </LinearGradient>
 
-          <LinearGradient colors={["#F2A74B", "#F2A74B"]} style={styles.gradientButton}>
+          <LinearGradient colors={["#FC9414", "#FC9414"]} style={styles.gradientButton}>
             <TouchableOpacity
               style={styles.optionButtonContent}
               onPress={() => setNotificationsModalVisible(true)}
@@ -82,7 +82,7 @@ const [travelPreferencesModalVisible, setTravelPreferencesModalVisible] = useSta
             </TouchableOpacity>
           </LinearGradient>
 
-          <LinearGradient colors={["#F2A74B", "#F2A74B"]} style={styles.gradientButton}>
+          <LinearGradient colors={["#FC9414", "#FC9414"]} style={styles.gradientButton}>
             <TouchableOpacity
               style={styles.optionButtonContent}
               onPress={() => setAppearanceModalVisible(true)}

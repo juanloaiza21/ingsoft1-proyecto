@@ -54,7 +54,7 @@ export default function Page() {
         <Text style={styles.meetingPointTitle}>Punto de encuentro:</Text>
         <Text style={styles.meetingPointValue}>Detrás del CYT</Text>
       </View>
-      <View style={styles.meetingPoint}>
+      <View style={styles.meetingPoint2}>
         <Text style={styles.meetingPointTitle}>Destino:</Text>
         <Text style={styles.meetingPointValue}>Centro comercial Titán plaza</Text>
       </View>
@@ -130,7 +130,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
+    marginVertical: 0,
+    marginBottom: 5,
   },
   headerText: {
     fontSize: 22,
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 5,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -190,7 +191,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B8CA6',
     padding: 12,
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 5,
+  },
+  meetingPoint2: {
+    backgroundColor: '#1B8CA6',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
   },
   meetingPointTitle: {
     fontWeight: 'bold',
@@ -207,14 +214,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   buttonRed: {
     backgroundColor: '#c91905',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   buttonText: {
     color: 'white',
@@ -225,7 +232,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B8CA6',
     borderRadius: 12,
     padding: 16,
-    marginTop: 8,
+    marginTop: 0 ,
   },
   infoItem: {
     flexDirection: 'row',
