@@ -95,7 +95,7 @@ export default function Historial(): JSX.Element {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "white" }]}
+    <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "#024059" }]}
     >
       <Text style={[styles.title, theme === "dark" && styles.title2]}>
       Historial de Viajes</Text>
@@ -163,20 +163,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#FF0000", // Color de fondo principal
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "center",
+    color: "#F2A74B", // Título en amarillo claro
   },
   title2: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "center",
-    color: "white"
+    color: "#F2A74B", // Título en amarillo claro
   },
   listContainer: {
     paddingBottom: 20,
@@ -184,24 +185,25 @@ const styles = StyleSheet.create({
   tripItem: {
     padding: 15,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#F2A74B", // Bordes con el color intermedio
     borderRadius: 8,
     marginBottom: 10,
-    backgroundColor: "#fafafa",
+    backgroundColor: "#F2A74B", // Fondo del ítem de viaje
   },
   tripText: {
     fontSize: 18,
     fontWeight: "bold",
+    color: "white", // Texto en amarillo oscuro
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.5)", // Fondo translúcido oscuro
     justifyContent: "center",
     alignItems: "center",
   },
   modalContent: {
     width: "80%",
-    backgroundColor: "#fff",
+    backgroundColor: "#F2A74B", // Fondo del modal en un color cálido
     borderRadius: 10,
     padding: 20,
     alignItems: "center",
@@ -221,5 +223,6 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 16,
     marginVertical: 5,
+    color: "white", // Texto en color claro para detalles
   },
 });
