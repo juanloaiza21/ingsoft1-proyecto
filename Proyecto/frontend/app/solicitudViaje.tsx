@@ -157,14 +157,13 @@ const fetchTravelOptions = async (): Promise<TravelOption[]> => {
         const driver: ApiResponse = petition.data;
         const calf = await axios.request({
           method: ConfigVariables.api.calification.getProm.method,
-          url: `${ConfigVariables.api.calification.getProm.url}${item.id}`,
+          url: `${ConfigVariables.api.calification.getProm.url}${driver.result.id}`,
           headers: {
             'Authorization': `Bearer ${access_token}`,
           },
         })
         const calification: ApiResponse = calf.data;
         driver.result.calification = calification.result;
-
         const petitionUser = await axios.request({
           method: ConfigVariables.api.user.getOne.method,
           url: `${ConfigVariables.api.user.getOne.url}${driver.result.id}`,

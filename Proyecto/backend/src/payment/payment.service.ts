@@ -10,7 +10,6 @@ import {
   MerchantOrder,
 } from 'mercadopago';
 import axios from 'axios';
-import { connect } from 'http2';
 import { BillStatus } from '@prisma/client';
 
 @Injectable()
@@ -108,6 +107,7 @@ export class PaymentService {
         options.productPrice,
         body.external_reference,
       );
+      this.logger.log(result);
       return {
         paylink: result.init_point,
         billId: result.id,
@@ -131,6 +131,7 @@ export class PaymentService {
         paylink: result.init_point,
         billId: result.id,
         externalId: result.external_reference,
+        collectorId: result.collector_id,
       };
     } catch (error) {
       this.logger.error(error);
@@ -192,6 +193,19 @@ export class PaymentService {
     } catch (error) {
       this.logger.error(error);
       throw new HttpException('Somenthing went wrong', 400);
+    }
+  }
+
+  async getBill(id: string) {
+    try {
+      return await this.prismaService.bill.findUnique({
+        where: {
+          paymentId: id,
+        },
+      });
+    } catch (error) {
+      this.logger.error(error);
+      throw new HttpException('Error finding bill', 400);
     }
   }
 }
