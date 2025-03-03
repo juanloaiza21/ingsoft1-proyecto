@@ -1,7 +1,6 @@
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
 import { useTheme } from "./context/themeContext";
-
 import {
   View,
   Text,
@@ -11,23 +10,12 @@ import {
   Image,
   Modal,
   TextInput,
+  Animated,
+  ScrollView,
+  Platform,
+  Dimensions
 } from "react-native";
-
-import { FontAwesome } from "@expo/vector-icons";
-
-interface TravelOption {
-  "id": string,
-  "origin": string,
-  "destination": string,
-  "departureDate": string,
-  "beginDate": string,
-  "endDate": string,
-  "status": string,
-  "driverId": string,
-  "price": number,
-  "createdAt": string,
-  "updatedAt": string,
-}
+import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from "axios";
 import { ConfigVariables } from "./config/config";
@@ -36,16 +24,20 @@ import { Trip } from "./types/trip.types";
 import { User } from "./types/user.types";
 import { Calification } from "./types/calification-response.types";
 import { ApiResponse } from "./types/api-response.type";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function DriverProfile() {
-  const { theme } = useTheme(); //para cambiar el tema
+  const { theme } = useTheme();
+  const router = useRouter();
 
-  const router = useRouter(); //para navegar a otra pantalla
-
+  // States
   const [modalVisible, setModalVisible] = useState(false);
   const [complaint, setComplaint] = useState("");
   const [access_token, setAccess_token] = useState<string>('');
   const [refresh_token, setRefresh_token] = useState<string>('');
+  const [modalVisibleRating, setModalVisibleRating] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState("");
   const [travelData, setTravelData] = useState<{
     driver: Driver | null;
     travel: Trip | null;
@@ -56,20 +48,50 @@ export default function DriverProfile() {
     user: null,
   });
 
+  // Animation refs
+  const logoAnim = useRef(new Animated.Value(300)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const profileImageAnim = useRef(new Animated.Value(0.5)).current;
+  const profileFadeAnim = useRef(new Animated.Value(0)).current;
+  const buttonRowAnim = useRef(new Animated.Value(-50)).current;
+  const reportButtonAnim = useRef(new Animated.Value(50)).current;
+  
+  // Button animation refs
+  const viewRatingButtonAnim = useRef(new Animated.Value(1)).current;
+  const rateButtonAnim = useRef(new Animated.Value(1)).current;
+  const reportButtonScaleAnim = useRef(new Animated.Value(1)).current;
+
+  // Get tokens from AsyncStorage
+  const getTokens = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      setAccess_token(accessToken ?? '');
+      setRefresh_token(refreshToken ?? '');
+      return { accessToken, refreshToken };
+    } catch (error) {
+      console.error('Error al recuperar tokens:', error);
+      return { accessToken: null, refreshToken: null };
+    }
+  };
+  
+  // Fetch califications
   const fetchCalifications = async (): Promise<void> => {
     try {
-      const result: Calification[] = []
+      if (!travelData.user?.id) return;
+      
       const petition = await axios.request({
         method: ConfigVariables.api.calification.getAll.method,
-        url: ConfigVariables.api.calification.getAll.url+ travelData.user?.id,
+        url: ConfigVariables.api.calification.getAll.url + travelData.user.id,
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
-      })
-      const data: ApiResponse = petition.data;
-      data.result.forEach((calification: Calification) => {
-        result.push(calification);
       });
+      
+      const data: ApiResponse = petition.data;
+      const result: Calification[] = data.result;
+      
       // Store califications data in AsyncStorage
       try {
         await AsyncStorage.setItem('calificationsData', JSON.stringify(result));
@@ -77,93 +99,147 @@ export default function DriverProfile() {
       } catch (error) {
         console.error('Failed to save califications data:', error);
       }
-      return;
     } catch (error) {
       console.error(error);
-      return;  // Return empty array in case of error
     }
   };
 
-  // Función para obtener los tokens desde AsyncStorage
-  const getTokens = async () => {
+  // Function to load travel data from AsyncStorage
+  const loadTravelData = async () => {
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      const refreshToken = await AsyncStorage.getItem('refreshToken');
-      setAccess_token(accessToken ?? '');
-      setRefresh_token(refreshToken ?? '');
+      const data = await AsyncStorage.getItem('currentTravelData');
+      if (data) {
+        setTravelData(JSON.parse(data));
+        console.log("Travel data loaded successfully");
+      }
     } catch (error) {
-      console.error('Error al recuperar tokens:', error);
-      return { accessToken: null, refreshToken: null };
+      console.error("Failed to load travel data:", error);
     }
   };
 
-    // Function to load travel data from AsyncStorage
-    const loadTravelData = async () => {
-      try {
-        const data = await AsyncStorage.getItem('currentTravelData');
-        if (data) {
-          setTravelData(JSON.parse(data));
-          console.log("Travel data loaded successfully");
-        }
-      } catch (error) {
-        console.error("Failed to load travel data:", error);
-      }
-    };
-  
-    // Load travel data when component mounts
-    useEffect(() => {
-      loadTravelData();
-    }, []);
-
-  // Ejemplo de uso en useEffect
+  // Start animations
   useEffect(() => {
+    // Animate logo sliding in
+    Animated.spring(logoAnim, {
+      toValue: 0,
+      friction: 4,
+      tension: 5,
+      useNativeDriver: true,
+    }).start();
+    
+    // Fade in content with sequence
+    Animated.sequence([
+      Animated.delay(300), // Wait for logo animation
+      Animated.parallel([
+        // Fade in profile content
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        // Scale content up
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 6,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        // Profile image grows and fades in
+        Animated.timing(profileFadeAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.spring(profileImageAnim, {
+          toValue: 1,
+          friction: 6,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        // Buttons slide in from sides
+        Animated.spring(buttonRowAnim, {
+          toValue: 0,
+          friction: 6,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.spring(reportButtonAnim, {
+          toValue: 0,
+          friction: 6,
+          tension: 40,
+          useNativeDriver: true,
+        })
+      ])
+    ]).start();
+    
+    // Load tokens and travel data
     const loadTokens = async () => {
       await getTokens();
-      if (access_token && refresh_token) {
-        console.log('Tokens recuperados correctamente');
-      }
+      await loadTravelData();
     };
     loadTokens();
   }, []);
+  
+  // Button animation handlers
+  const handlePressIn = (animRef) => {
+    Animated.spring(animRef, {
+      toValue: 0.95,
+      friction: 5,
+      tension: 50,
+      useNativeDriver: true,
+    }).start();
+  };
+  
+  const handlePressOut = (animRef) => {
+    Animated.spring(animRef, {
+      toValue: 1,
+      friction: 5,
+      tension: 50,
+      useNativeDriver: true,
+    }).start();
+  };
 
-  // Estado para controlar la visibilidad del modal de calificación
-  const [modalVisibleRating, setModalVisibleRating] = useState(false);
-  // Estado para almacenar la calificación seleccionada (0-5)
-  const [rating, setRating] = useState(0);
-  // Estado para almacenar el comentario opcional
-  const [ratingComment, setRatingComment] = useState("");
-
+  // Handle report submission
   const handleReport = async () => {
     if (complaint.trim() === "") {
       Alert.alert("Error", "Por favor, escribe una queja antes de enviar.");
       return;
     }
-    await axios.request({
-      method: ConfigVariables.api.calification.create.method,
-      url: ConfigVariables.api.calification.create.url,
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-      data: {
-        score: 1,
-        comment: complaint,
-        userCalificatedId: travelData.driver?.id,
-      },
-    })
-    await fetchCalifications();
-    Alert.alert("Queja enviada", "Tu reporte ha sido registrado.", [
-      { text: "Aceptar", onPress: () => setModalVisible(false) },
-    ]);
-    setComplaint(""); // Limpiar el campo después de enviar
+    
+    try {
+      await axios.request({
+        method: ConfigVariables.api.calification.create.method,
+        url: ConfigVariables.api.calification.create.url,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+        data: {
+          score: 1,
+          comment: complaint,
+          userCalificatedId: travelData.driver?.id,
+        },
+      });
+      
+      await fetchCalifications();
+      
+      Alert.alert("Queja enviada", "Tu reporte ha sido registrado.", [
+        { text: "Aceptar", onPress: () => setModalVisible(false) },
+      ]);
+      setComplaint(""); // Clear field after sending
+    } catch (error) {
+      console.error("Error al enviar reporte:", error);
+      Alert.alert("Error", "No se pudo enviar el reporte.");
+    }
   };
 
+  // Handle rating submission
   const handleRatingSubmit = async () => {
     if (rating === 0) {
       Alert.alert("Error", "Por favor selecciona al menos 1 estrella.");
       return;
     }
+    
     try {
-
       await axios.request({
         method: ConfigVariables.api.calification.create.method,
         url: ConfigVariables.api.calification.create.url,
@@ -175,271 +251,598 @@ export default function DriverProfile() {
           comment: ratingComment,
           userCalificatedId: travelData.driver?.id,
         },
-      })
+      });
+      
       await fetchCalifications();
-      console.log('Calificación enviada correctamente');
+      
+      const ratingMessage = `Has calificado al conductor con ${rating} ${rating === 1 ? 'estrella' : 'estrellas'}.`;
+      const commentMessage = ratingComment ? `\nComentario: ${ratingComment}` : '';
+      
       Alert.alert(
         "Calificación enviada",
-        `Calificaste al conductor con ${rating} estrellas.\nComentario: ${
-          ratingComment || "Ninguno"
-        }`,
+        ratingMessage + commentMessage,
         [{ text: "Aceptar", onPress: () => setModalVisibleRating(false) }]
       );
+      
+      // Reset state
+      setRating(0);
+      setRatingComment("");
     } catch (error) {
       console.error("Error al enviar calificación:", error);
       Alert.alert("Error", "No se pudo enviar la calificación.");
-      return;
     }
-    setRating(0); // Reiniciar la calificación
-    setRatingComment(""); // Limpiar el comentario
   };
 
   return (
-    <View
-      style={[
+    <ScrollView
+      contentContainerStyle={[
         styles.container,
-        { backgroundColor: theme === "dark" ? "#2d2c24" : "white" },
+        { backgroundColor: theme === "dark" ? "#2d2c24" : "#024059" }
       ]}
+      showsVerticalScrollIndicator={false}
     >
-      <Text style={[styles.title, theme === "dark" && styles.title2]}>
-        Perfil del conductor
-      </Text>
-      <Image
-        source={require("../assets/images/Daguilastrico.jpeg")}
-        style={styles.image}
-      />
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoText}>
-          {travelData.user?.name}{"\n"}Tel: {travelData.user?.phoneNumber?.replace(/^\+57/, '')}{"\n"}runtNumber: {travelData.driver?.runtNumber}
-        </Text>
+      {/* Top Bar */}
+      <View style={styles.topBar}>
+        {/* Left: App Name Image */}
+        <Image
+          source={require("../assets/images/Nombre (2).png")}
+          style={styles.appNameImage}
+          resizeMode="contain"
+        />
+        {/* Right: Animated Logo */}
+        <Animated.Image
+          source={
+            theme === "dark"
+              ? require("../assets/images/icon-black.png")
+              : require("../assets/images/icon-black.png")
+          }
+          style={[
+            styles.animatedLogo,
+            { transform: [{ translateX: logoAnim }] },
+          ]}
+          resizeMode="contain"
+        />
       </View>
 
-      <View style={styles.buttonContainer}>
+      {/* Title */}
+      <Animated.View
+        style={{
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }],
+          marginBottom: 20
+        }}
+      >
+        <LinearGradient
+          colors={["#1B8CA6", "#0a6a80"]}
+          start={[0, 0]}
+          end={[1, 1]}
+          style={styles.titleGradient}
+        >
+          <Ionicons name="person-circle" size={28} color="white" style={{ marginRight: 10 }} />
+          <Text style={styles.title}>Perfil del Conductor</Text>
+        </LinearGradient>
+      </Animated.View>
+
+      {/* Profile Card */}
+      <Animated.View 
+        style={[
+          styles.profileCard,
+          { 
+            opacity: profileFadeAnim,
+            transform: [{ scale: profileImageAnim }]
+          }
+        ]}
+      >
+        {/* Profile Image */}
+        <Image
+          source={require("../assets/images/Daguilastrico.jpeg")}
+          style={styles.profileImage}
+        />
+        
+        {/* User Info */}
+        <View style={styles.profileInfo}>
+          {/* User Name */}
+          <View style={styles.infoRow}>
+            <FontAwesome name="user" size={24} color="#fc9414" style={styles.infoIcon} />
+            <Text style={styles.infoText}>{travelData.user?.name}</Text>
+          </View>
+
+          {/* Phone Number */}
+          <View style={styles.infoRow}>
+            <MaterialIcons name="phone" size={24} color="#fc9414" style={styles.infoIcon} />
+            <Text style={styles.infoText}>
+              Tel: {travelData.user?.phoneNumber?.replace(/^\+57/, '')}
+            </Text>
+          </View>
+
+          {/* Runt Number */}
+          <View style={styles.infoRow}>
+            <MaterialIcons name="sim-card" size={24} color="#fc9414" style={styles.infoIcon} />
+            <Text style={styles.infoText}>
+              Runt: {travelData.driver?.runtNumber}
+            </Text>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Actions Section */}
+      <View style={styles.actionsContainer}>
+        {/* Row with two action buttons */}
+        <Animated.View
+          style={[
+        styles.rowContainer,
+        { transform: [{ translateX: buttonRowAnim }], justifyContent: 'center' }
+          ]}
+        >
+          {/* View Ratings Button */}
+          <Animated.View
+        style={{ 
+          transform: [{ scale: viewRatingButtonAnim }],
+          marginHorizontal: 8
+        }}
+          >
         <TouchableOpacity
-          style={styles.optionButton}
-          onPress={() => {
-            fetchCalifications();
+          onPressIn={() => handlePressIn(viewRatingButtonAnim)}
+          onPressOut={() => handlePressOut(viewRatingButtonAnim)}
+          onPress={async () => {
+            await fetchCalifications();
             router.push("/calification");
           }}
+          activeOpacity={0.8}
         >
+          <LinearGradient
+            colors={["#1B8CA6", "#0a6a80"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={[styles.actionButton, { width: Dimensions.get('window').width * 0.4 }]}
+          >
+            <View style={styles.buttonContent}>
+          <Ionicons name="star-half-outline" size={24} color="white" style={styles.buttonIcon} />
           <Text style={styles.buttonText}>Ver calificaciones</Text>
+            </View>
+          </LinearGradient>
         </TouchableOpacity>
+          </Animated.View>
 
+          {/* Rate Driver Button */}
+          <Animated.View
+        style={{ 
+          transform: [{ scale: rateButtonAnim }],
+          marginHorizontal: 8
+        }}
+          >
         <TouchableOpacity
-          style={styles.optionButton}
+          onPressIn={() => handlePressIn(rateButtonAnim)}
+          onPressOut={() => handlePressOut(rateButtonAnim)}
           onPress={() => setModalVisibleRating(true)}
+          activeOpacity={0.8}
         >
+          <LinearGradient
+            colors={["#fc9414", "#f57c00"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={[styles.actionButton, { width: Dimensions.get('window').width * 0.4 }]}
+          >
+            <View style={styles.buttonContent}>
+          <Ionicons name="star" size={24} color="white" style={styles.buttonIcon} />
           <Text style={styles.buttonText}>Calificar conductor</Text>
+            </View>
+          </LinearGradient>
         </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
+      </View>
 
-        {/* Modal de Calificación */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisibleRating}
-          onRequestClose={() => setModalVisibleRating(false)}
+        {/* Report Driver Button */}
+        <Animated.View
+          style={[
+            styles.reportButtonContainer,
+            { transform: [
+                { translateY: reportButtonAnim },
+                { scale: reportButtonScaleAnim }
+              ] 
+            }
+          ]}
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Califica al conductor</Text>
-
-              {/* Campo de texto para comentario opcional */}
-              <TextInput
-                style={styles.input}
-                placeholder="Añade un comentario (opcional)..."
-                multiline
-                value={ratingComment}
-                onChangeText={setRatingComment}
-              />
-
-              {/* Estrellas de calificación */}
-              <View style={styles.starsContainer}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <TouchableOpacity key={star} onPress={() => setRating(star)}>
-                    <FontAwesome
-                      name={star <= rating ? "star" : "star-o"}
-                      size={40}
-                      color={star <= rating ? "#FFD700" : "#d3d3d3"}
-                    />
-                  </TouchableOpacity>
-                ))}
+          <TouchableOpacity
+            onPressIn={() => handlePressIn(reportButtonScaleAnim)}
+            onPressOut={() => handlePressOut(reportButtonScaleAnim)}
+            onPress={() => setModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={["#e53935", "#c62828"]}
+              start={[0, 0]}
+              end={[1, 1]}
+              style={styles.reportButton}
+            >
+              <View style={styles.buttonContent}>
+                <Ionicons name="alert-circle" size={24} color="white" style={styles.buttonIcon} />
+                <Text style={styles.buttonText}>Reportar conductor</Text>
               </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+    
+      {/* Rating Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisibleRating}
+        onRequestClose={() => setModalVisibleRating(false)}
+      >
+        <View style={styles.modalContainer}>
+          <Animated.View 
+            style={styles.modalContent}
+          >
+            <LinearGradient
+              colors={["#fc9414", "#f57c00"]}
+              start={[0, 0]}
+              end={[1, 1]}
+              style={styles.modalHeader}
+            >
+              <Ionicons name="star" size={24} color="white" style={{ marginRight: 10 }} />
+              <Text style={styles.modalTitle}>Califica al Conductor</Text>
+            </LinearGradient>
 
+            {/* Stars Rating */}
+            <View style={styles.starsContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity 
+                  key={star} 
+                  onPress={() => setRating(star)}
+                  style={styles.starButton}
+                >
+                  <FontAwesome
+                    name={star <= rating ? "star" : "star-o"}
+                    size={40}
+                    color={star <= rating ? "#FFD700" : "#aaaaaa"}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            <Text style={styles.ratingLabel}>
+              {rating > 0 
+                ? `Calificación: ${rating} ${rating === 1 ? 'estrella' : 'estrellas'}`
+                : "Selecciona una calificación"}
+            </Text>
+
+            {/* Comment Field */}
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Añade un comentario (opcional)..."
+              placeholderTextColor="#888888"
+              multiline
+              numberOfLines={4}
+              value={ratingComment}
+              onChangeText={setRatingComment}
+            />
+
+            {/* Modal Actions */}
+            <View style={styles.modalActions}>
               <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleRatingSubmit}
-              >
-                <Text style={styles.buttonText}>Enviar calificación</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.closeButton}
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setModalVisibleRating(false)}
               >
-                <Text style={styles.buttonText}>Cancelar</Text>
+                <Text style={styles.modalButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.submitButton, rating === 0 && styles.disabledButton]}
+                onPress={handleRatingSubmit}
+                disabled={rating === 0}
+              >
+                <Text style={styles.modalButtonText}>Enviar</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </Modal>
+          </Animated.View>
+        </View>
+      </Modal>
 
-        <TouchableOpacity
-          style={styles.optionButtonReport}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={styles.buttonText}>Reportar conductor</Text>
-        </TouchableOpacity>
+      {/* Report Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <Animated.View 
+            style={styles.modalContent}
+          >
+            <LinearGradient
+              colors={["#e53935", "#c62828"]}
+              start={[0, 0]}
+              end={[1, 1]}
+              style={styles.modalHeader}
+            >
+              <Ionicons name="alert-circle" size={24} color="white" style={{ marginRight: 10 }} />
+              <Text style={styles.modalTitle}>Reportar Conductor</Text>
+            </LinearGradient>
 
-        {/* Modal de Reporte */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Escribe tu queja</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Describe el problema..."
-                multiline
-                value={complaint}
-                onChangeText={setComplaint}
-              />
+            <Text style={styles.modalDescription}>
+              Por favor describa el problema o motivo de su reporte.
+              Su informe será revisado por nuestro equipo.
+            </Text>
+
+            {/* Complaint Input */}
+            <TextInput
+              style={styles.complainInput}
+              placeholder="Describe el problema detalladamente..."
+              placeholderTextColor="#888888"
+              multiline
+              numberOfLines={6}
+              value={complaint}
+              onChangeText={setComplaint}
+            />
+
+            {/* Modal Actions */}
+            <View style={styles.modalActions}>
               <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleReport}
-              >
-                <Text style={styles.buttonText}>Enviar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.closeButton}
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.buttonText}>Cancelar</Text>
+                <Text style={styles.modalButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.modalButton, 
+                  styles.reportSubmitButton,
+                  complaint.trim() === "" && styles.disabledButton
+                ]}
+                onPress={handleReport}
+                disabled={complaint.trim() === ""}
+              >
+                <Text style={styles.modalButtonText}>Enviar</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </Modal>
-      </View>
-    </View>
+          </Animated.View>
+        </View>
+      </Modal>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-    paddingTop: 50,
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+    backgroundColor: "#024059",
   },
-
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    paddingVertical: 5,
+  },
+  appNameImage: {
+    width: 120,
+    height: 40,
+    marginHorizontal: 20,
+  },
+  animatedLogo: {
+    width: 60,
+    height: 60,
+    marginHorizontal: 20,
+  },
+  titleGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 10,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
+    color: "white",
+  },
+  profileCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
   },
-
-  title2: {
-    fontSize: 26, // Un poco más grande
-    fontWeight: "bold",
-    color: "white", // Color más elegante y menos básico que el negro puro
-    marginRight: 0, // Espacio con la imagen
-    textTransform: "uppercase", // Convierte el texto en mayúsculas
-    letterSpacing: 1, // Espacia un poco las letras para un diseño más limpio
-
-    marginBottom: 22,
-    marginLeft: 15,
-  },
-  image: {
+  profileImage: {
     width: 150,
     height: 150,
     borderRadius: 75,
-    marginBottom: 20,
-    resizeMode: "cover", // Changed from "contain" to "cover" to fill the circle
+    borderWidth: 3,
+    borderColor: '#fc9414',
   },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
+  profileInfo: {
+    width: '100%',
+    marginTop: 20,
   },
-  buttonContainer: {
-    width: "100%",
-    alignItems: "center",
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
   },
-  optionButton: {
-    backgroundColor: "#007bff",
-    padding: 27,
-    borderRadius: 10,
-    width: "60%",
-    alignItems: "center",
-    marginVertical: 10,
-    marginTop: 30,
-  },
-  optionButtonReport: {
-    backgroundColor: "#c91905",
-    padding: 27,
-    borderRadius: 10,
-    width: "60%",
-    alignItems: "center",
-    marginVertical: 10,
-    marginTop: 30,
-  },
-  infoContainer: {
-    backgroundColor: "#f0f0f0",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    marginVertical: 10,
+  infoIcon: {
+    marginRight: 15,
   },
   infoText: {
     fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
+    fontWeight: '500',
+    color: 'white',
+  },
+  actionsContainer: {
+    width: '100%',
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  actionButton: {
+    padding: 16,
+    borderRadius: 12,
+    minWidth: Dimensions.get('window').width * 0.43,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  reportButtonContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  reportButton: {
+    padding: 16,
+    borderRadius: 12,
+    width: Dimensions.get('window').width * 0.7,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
   },
   modalContent: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    width: "80%",
-    alignItems: "center",
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
   },
-  input: {
-    width: "100%",
-    height: 60,
-    borderColor: "gray",
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
+  modalDescription: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  commentInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 16,
+    marginVertical: 10,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    color: '#333',
+  },
+  complainInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 16,
+    marginVertical: 10,
+    minHeight: 150,
+    textAlignVertical: 'top',
+    color: '#333',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginVertical: 16,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#9e9e9e',
+    marginRight: 8,
   },
   submitButton: {
-    backgroundColor: "#007bff",
-    padding: 10,
-    borderRadius: 5,
-    width: "100%",
-    alignItems: "center",
-    marginBottom: 10,
+    backgroundColor: '#fc9414',
+    marginLeft: 8,
   },
-  closeButton: {
-    backgroundColor: "gray",
-    padding: 10,
-    borderRadius: 5,
-    width: "100%",
-    alignItems: "center",
+  reportSubmitButton: {
+    backgroundColor: '#e53935',
+    marginLeft: 8,
+  },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   starsContainer: {
-    flexDirection: "row",
-    marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 16,
   },
+  starButton: {
+    paddingHorizontal: 6,
+  },
+  ratingLabel: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 10,
+    fontWeight: '500'
+  }
 });

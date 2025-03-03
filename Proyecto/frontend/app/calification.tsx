@@ -1,7 +1,5 @@
-// app/historial.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "./context/themeContext";
-
 import {
   View,
   Text,
@@ -11,21 +9,19 @@ import {
   Modal,
   Image,
   ActivityIndicator,
-  Button,
+  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import type { Calification } from "./types/calification-response.types";
-import axios from "axios";
-import { ConfigVariables } from "./config/config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { Driver } from "./types/driver.types";
 import { Trip } from "./types/trip.types";
 import { User } from "./types/user.types";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ApiResponse } from "./types/api-response.type";
 
 export default function Calification(): JSX.Element {
-
-  const { theme } = useTheme(); //para cambiar el tema
+  const { theme } = useTheme();
+  const router = useRouter();
 
   const [calification, setCalification] = useState<Calification[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -34,14 +30,27 @@ export default function Calification(): JSX.Element {
   const [access_token, setAccess_token] = useState<string>('');
   const [refresh_token, setRefresh_token] = useState<string>('');
   const [travelData, setTravelData] = useState<{
-    driver: Driver | null;    travel: Trip | null;
+    driver: Driver | null;
+    travel: Trip | null;
     user: User | null;
   }>({
     driver: null,
     travel: null,
     user: null,
   });
-  const router = useRouter();
+
+  // Animation for the logo
+  const logoAnim = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    // Animate the logo from off-screen right to its final position
+    Animated.spring(logoAnim, {
+      toValue: 0,
+      friction: 4,
+      tension: 5,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const getTokens = async () => {
     try {
@@ -54,6 +63,7 @@ export default function Calification(): JSX.Element {
       return { accessToken: null, refreshToken: null };
     }
   };
+
   useEffect(() => {
     const loadTokens = async () => {
       await getTokens();
@@ -76,15 +86,10 @@ export default function Calification(): JSX.Element {
     }
   };
 
-
-
-  // Load travel data when component mounts
   useEffect(() => {
     loadTravelData();
   }, []);
 
-
-    // Función simulada para obtener el historial de viajes desde el backend
   const fetchCalifications = async (): Promise<Calification[]> => {
     try {
       setLoading(true);
@@ -113,8 +118,6 @@ export default function Calification(): JSX.Element {
     loadCalifications();
   }, []);
 
-
-
   const handleTripPress = (calification: Calification) => {
     setSelectedCalification(calification);
     setModalVisible(true);
@@ -126,43 +129,75 @@ export default function Calification(): JSX.Element {
   };
 
   const handleDriverPress = () => {
-    // Navegar a la página driverProfile.tsx
     router.push("/driverProfile");
-    // Opcionalmente, cerrar el modal
     closeModal();
   };
 
   const renderCalificationItem = ({ item }: { item: Calification }): JSX.Element => {
-    // Generate star representation based on score
-    const stars = "⭐".repeat(Math.min(Math.max(1, item.score), 5));
-    
     return (
       <TouchableOpacity
-        style={[styles.tripItem, { backgroundColor: theme === "dark" ? "#2d2c24" : "white" }]}
+        style={styles.tripItem}
         onPress={() => handleTripPress(item)}
       >
-        <Text style={[styles.tripText, theme === "dark" && { color: "white" }]}>
-          Puntaje: {item.score} {stars}
+        <View style={styles.ratingContainer}>
+          <Text style={styles.scoreText}>
+            {item.score}
+          </Text>
+          <View style={styles.starsContainer}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <FontAwesome
+                key={star}
+                name={star <= item.score ? "star" : "star-o"}
+                size={16}
+                color={star <= item.score ? "#FFD700" : "#d3d3d3"}
+                style={styles.starIcon}
+              />
+            ))}
+          </View>
+        </View>
+        <Text style={styles.commentText}>
+          {item.comment}
         </Text>
-        <Text style={[styles.tripText, theme === "dark" && { color: "white" }]}>
-          Comentario: {item.comment}
-        </Text>
-        <Text style={[{ fontSize: 14 }, theme === "dark" && { color: "#cccccc" }]}>
-          {item.createdAt}
+        <Text style={styles.dateText}>
+          {new Date(item.createdAt).toLocaleDateString()}
         </Text>
       </TouchableOpacity>
     );
   }
 
   return (
+    <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "#024059" }]}>
+           {/* Top Bar */}
+           <View style={styles.topBar}>
+        {/* Left: App Name Image */}
+        <Image
+          source={require("../assets/images/Nombre (2).png")} // Replace with your app name image
+          style={styles.appNameImage}
+          resizeMode="contain"
+        />
+        {/* Right: Animated Logo */}
+        <Animated.Image
+          source={
+            theme === "dark"
+              ? require("../assets/images/icon-black.png")
+              : require("../assets/images/icon-black.png")
+          }
+          style={[
+            styles.animatedLogo,
+            { transform: [{ translateX: logoAnim }] },
+          ]}
+          resizeMode="contain"
+        />
+      </View>
 
-    <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "white" }]}
-    >
+      <Text style={styles.pageTitle}>
+        Calificaciones y comentarios
+      </Text>
 
-      <Text style={[styles.title, theme === "dark" && styles.title2]}>
-      Calificaciones y comentarios</Text>
       {loading ? (
-        <ActivityIndicator size="large" color="#007AFF" />
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#fc9414" />
+        </View>
       ) : (
         <FlatList
           data={calification}
@@ -172,7 +207,7 @@ export default function Calification(): JSX.Element {
         />
       )}
 
-      {/* Modal de detalles del viaje */}
+      {/* Modal de detalles */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -183,34 +218,58 @@ export default function Calification(): JSX.Element {
           <View style={styles.modalContent}>
             {selectedTrip && (
               <>
-                <TouchableOpacity
-                  onPress={handleDriverPress}
-                  style={styles.driverImageContainer}
-                >
-                </TouchableOpacity>
-                <View style={styles.detailsContainer}>
-                  <Text style={styles.detailText}>
-                  Calificación: {selectedTrip.score}
+                <Text style={styles.modalTitle}>Detalles de Calificación</Text>
+                <View style={styles.modalRatingContainer}>
+                  <Text style={styles.modalRatingText}>
+                    Calificación: {selectedTrip.score}
                   </Text>
-                  <Text style={styles.detailText}>
-                  Comentario: {selectedTrip.comment}
-                  </Text>
-                  <Text style={styles.detailText}>
-                  Fecha: {selectedTrip.createdAt}
+                  <View style={styles.modalStarsContainer}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <FontAwesome
+                        key={star}
+                        name={star <= selectedTrip.score ? "star" : "star-o"}
+                        size={24}
+                        color={star <= selectedTrip.score ? "#FFD700" : "#d3d3d3"}
+                        style={styles.modalStarIcon}
+                      />
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.commentContainer}>
+                  <Text style={styles.modalLabel}>Comentario:</Text>
+                  <Text style={styles.modalCommentText}>{selectedTrip.comment}</Text>
+                </View>
+
+                <View style={styles.dateContainer}>
+                  <Text style={styles.modalLabel}>Fecha:</Text>
+                  <Text style={styles.modalDateText}>
+                    {new Date(selectedTrip.createdAt).toLocaleDateString()}
                   </Text>
                 </View>
 
-                <View style={{ marginBottom: 15 }}>
-                <Button
-                  title="Ver perfil del Conductor del viaje"
+                <TouchableOpacity
+                  style={styles.viewProfileButton}
                   onPress={() => {
                     closeModal();
                     router.push("/driverProfile");
                   }}
-                />
-                </View>
-                <Button title="Cerrar" onPress={closeModal} color = "#c91905"/>
-          
+                >
+                  <View style={styles.buttonContent}>
+                    <Ionicons name="person" size={20} color="white" style={styles.buttonIcon} />
+                    <Text style={styles.buttonText}>Ver perfil del conductor</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={closeModal}
+                >
+                  <View style={styles.buttonContent}>
+                    <Ionicons name="close-circle" size={20} color="white" style={styles.buttonIcon} />
+                    <Text style={styles.buttonText}>Cerrar</Text>
+                  </View>
+                </TouchableOpacity>
               </>
             )}
           </View>
@@ -223,36 +282,85 @@ export default function Calification(): JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#024059",
+    paddingHorizontal: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fc9414",
+    borderRadius: 20,
+    width: "100%",
+    paddingVertical: 5,
   },
-  title2: {
-    fontSize: 24,
+  appNameImage: {
+    width: 120,
+    height: 40,
+    marginHorizontal: 20,
+  },
+  animatedLogo: {
+    width: 60,
+    height: 60,
+    marginHorizontal: 20,
+  },
+  pageTitle: {
+    fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 20,
+    color: "white",
     textAlign: "center",
-    color: "white"
+    marginVertical: 20,
+    backgroundColor: "#1B8CA6",
+    padding: 15,
+    borderRadius: 10,
+    marginHorizontal: 10,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   listContainer: {
+    paddingHorizontal: 15,
     paddingBottom: 20,
   },
   tripItem: {
     padding: 15,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
+    borderRadius: 10,
     marginBottom: 10,
-    backgroundColor: "#fafafa",
+    backgroundColor: "#1B8CA6",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  tripText: {
-    fontSize: 18,
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  scoreText: {
+    fontSize: 20,
     fontWeight: "bold",
+    color: "white",
+    marginRight: 10,
+  },
+  starsContainer: {
+    flexDirection: "row",
+  },
+  starIcon: {
+    marginHorizontal: 2,
+  },
+  commentText: {
+    fontSize: 16,
+    color: "white",
+    marginBottom: 5,
+  },
+  dateText: {
+    fontSize: 12,
+    color: "#f0f0f0",
+    textAlign: "right",
   },
   modalOverlay: {
     flex: 1,
@@ -261,26 +369,88 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    width: "80%",
-    backgroundColor: "#fff",
-    borderRadius: 10,
+    width: "85%",
+    backgroundColor: "#024059",
+    borderRadius: 15,
     padding: 20,
-    alignItems: "center",
   },
-  driverImageContainer: {
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "white",
+    textAlign: "center",
     marginBottom: 15,
   },
-  driverImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  detailsContainer: {
-    marginBottom: 15,
+  modalRatingContainer: {
+    flexDirection: "row",
     alignItems: "center",
+    marginBottom: 15,
+    backgroundColor: "#1B8CA6",
+    padding: 10,
+    borderRadius: 10,
   },
-  detailText: {
+  modalRatingText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+    marginRight: 10,
+  },
+  modalStarsContainer: {
+    flexDirection: "row",
+  },
+  modalStarIcon: {
+    marginHorizontal: 3,
+  },
+  commentContainer: {
+    backgroundColor: "#1B8CA6",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  dateContainer: {
+    backgroundColor: "#1B8CA6",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  modalLabel: {
     fontSize: 16,
-    marginVertical: 5,
+    fontWeight: "bold",
+    color: "white",
+    marginBottom: 5,
+  },
+  modalCommentText: {
+    fontSize: 16,
+    color: "white",
+  },
+  modalDateText: {
+    fontSize: 16,
+    color: "white",
+  },
+  viewProfileButton: {
+    backgroundColor: "#fc9414",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  closeButton: {
+    backgroundColor: "#c91905",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  buttonIcon: {
+    marginRight: 8,
   },
 });
