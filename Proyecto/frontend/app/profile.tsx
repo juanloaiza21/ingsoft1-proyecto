@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import React, { useState,useEffect, useRef } from "react";
 import { useTheme } from "./context/themeContext";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import {
   View,
@@ -14,9 +15,15 @@ import {
   TextInput,
   ScrollView,
   Animated,
+  Platform,
+  Pressable,
 } from "react-native";
 
 import * as ImagePicker from "expo-image-picker";
+import axios from "axios";
+import { ConfigVariables } from "./config/config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ApiResponse } from "./types/api-response.type";
 
 export default function Profile() {
 
@@ -34,6 +41,36 @@ export default function Profile() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [runt, setRunt] = useState("");
+  const [birthDate, setBirthDate] = useState<Date>(new Date());
+  const [show, setShow] = useState<boolean>(false);
+  const [access_token, setAccess_token] = useState<string>('');
+  const [refresh_token, setRefresh_token] = useState<string>('');
+
+  // Función para obtener los tokens desde AsyncStorage
+  const getTokens = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      setAccess_token(accessToken ?? '');
+      setRefresh_token(refreshToken ?? '');
+    } catch (error) {
+      console.error('Error al recuperar tokens:', error);
+      return { accessToken: null, refreshToken: null };
+    }
+  };
+
+
+  // Ejemplo de uso en useEffect
+  useEffect(() => {
+    const loadTokens = async () => {
+      await getTokens();
+      if (access_token && refresh_token) {
+        console.log('Tokens recuperados correctamente');
+      }
+    };
+    loadTokens();
+  }, []);
 
   // Verificar si las contraseñas nuevas coinciden
   const passwordsMatch = newPassword === confirmPassword;
@@ -41,10 +78,7 @@ export default function Profile() {
   const shouldShowPasswordError = newPassword !== "" && confirmPassword !== "" && !passwordsMatch;
   
   // Verificar si todos los campos obligatorios están completos y las validaciones pasan
-  const canSaveChanges = name !== "" && phone !== "" && email !== "" && 
-                          (currentPassword === "" || // Si no hay contraseña actual, no verificar coincidencia
-                           (currentPassword !== "" && newPassword !== "" && 
-                            confirmPassword !== "" && passwordsMatch));
+  const canSaveChanges = passwordsMatch
 
   let openImageAsync = async () => {
     let permissionResult =
@@ -53,6 +87,10 @@ export default function Profile() {
       alert("Permission to access camera roll is required!");
       return;
     }
+
+    const toggleDatePicker = () => {
+      setShow(!show);
+    };
 
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -71,12 +109,89 @@ export default function Profile() {
     setSelectedImage(null);
   };
 
-  const handleSaveChanges = () => {
-    // Aquí iría la lógica para guardar los cambios en la base de datos o API
-    Alert.alert("Cambios guardados", "Tus datos han sido actualizados correctamente");
-    setModalVisible(false);
-    // Resetear los campos del formulario
-    resetForm();
+    
+  const onChange = ( {type}, selectedDate: any) => {
+    if (type == "set") {
+      const currentDate = selectedDate;
+      setBirthDate(currentDate);
+      if (Platform.OS === 'android') {
+        toggleDatePicker();
+        setBirthDate(currentDate);
+      }
+    } else {
+      toggleDatePicker();
+    }
+  }
+
+  const handleSaveChanges = async () => {
+    try {
+      const body: { [key: string]: any } = {};
+      if (name !== "") {
+        body.name = name;
+      }
+      if (phone !== "") {
+        body.phoneNumber = phone;
+      }
+      if (newPassword !== "") {
+        body.password = newPassword;
+      }
+      
+      if (runt !== "") {
+        body.runtNumber = runt;
+        body.licenseExpirationDate = birthDate;
+        try {
+          await axios.request({
+            method: ConfigVariables.api.driver.create.method,
+            url: ConfigVariables.api.driver.create.url,
+            headers: {
+              'Authorization': `Bearer ${access_token}`,
+            },
+            data: {
+              runtNumber: body.runtNumber,
+              licenseExpirationDate: body.licenseExpirationDate,
+            }
+          });
+        } catch (driverError) {
+          console.error("Error creating driver profile:", driverError);
+          Alert.alert("Error", "No se pudo registrar la información del conductor.");
+          throw driverError;
+        }
+      }
+      try {
+        let user1Petition = await axios.request({
+          method: ConfigVariables.api.auth.checkJWT.method,
+          url: ConfigVariables.api.auth.checkJWT.url,
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        });
+        let user:ApiResponse = user1Petition.data;
+        console.log(ConfigVariables.api.user.update.url+user.result.userId);
+        await axios.request({
+          method: ConfigVariables.api.user.update.method,
+          url: ConfigVariables.api.user.update.url+user.result.userId,
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+          },
+          data: body,
+        });
+        
+        Alert.alert("Éxito", "Información actualizada correctamente.");
+        setModalVisible(false);
+        resetForm();
+      } catch (updateError) {
+        console.error("Error updating user profile:", updateError);
+        Alert.alert("Error", "No se pudo actualizar la información del usuario.");
+      }
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      Alert.alert("Error", "Ocurrió un problema al guardar los cambios.");
+    }
+  };
+
+
+  const toggleDatePicker = () => {
+    setShow(!show);
   };
 
   const resetForm = () => {
@@ -196,7 +311,7 @@ export default function Profile() {
             
             <ScrollView style={styles.formContainer}>
               {/* Nombre */}
-              <Text style={styles.inputLabel}>Nombre completo</Text>
+              <Text style={styles.inputLabel}>Nombre</Text>
               <TextInput
                 style={styles.input}
                 placeholder=""
@@ -214,29 +329,8 @@ export default function Profile() {
                 keyboardType="phone-pad"
               />
               
-              {/* Correo */}
-              <Text style={styles.inputLabel}>Correo electrónico</Text>
-              <TextInput
-                style={styles.input}
-                placeholder=""
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              
               {/* Sección de contraseña */}
               <Text style={styles.sectionTitle}>Cambiar contraseña (opcional)</Text>
-              
-              {/* Contraseña actual */}
-              <Text style={styles.inputLabel}>Contraseña actual</Text>
-              <TextInput
-                style={styles.input}
-                placeholder=""
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                secureTextEntry={true}
-              />
               
               {/* Contraseña nueva */}
               <Text style={styles.inputLabel}>Contraseña nueva</Text>
@@ -260,6 +354,42 @@ export default function Profile() {
                 onChangeText={setConfirmPassword}
                 secureTextEntry={true}
               />
+
+              {/* Soy conductor */}
+              <Text style={styles.sectionTitle}>Soy conductor</Text>
+              
+              {/* Runt */}
+              <Text style={styles.inputLabel}>Runt</Text>
+              <TextInput
+                style={styles.input}
+                placeholder=""
+                value={runt}
+                onChangeText={setRunt}
+                secureTextEntry={false}
+              />
+              
+              {/* Fecha expiracion id*/}
+              <Text style={styles.inputLabel}>Fecha de expiracion licencia</Text>
+              {show && (
+                <DateTimePicker
+                  mode='date'
+                  display='spinner'
+                  value={birthDate}
+                  onChange={onChange}
+                  minimumDate={new Date(Date.now() + 86400000)} // Tomorrow (current date + 24 hours in milliseconds)
+                />
+              )}
+        {!show && (
+                  <Pressable onPress={toggleDatePicker}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Fecha de Nacimiento"
+                    value={birthDate.toISOString()}
+                    onChangeText={setBirthDate}
+                    editable={false}
+                  /> 
+                </Pressable>
+        )}
               
               {/* Mensaje de error si las contraseñas no coinciden */}
               {shouldShowPasswordError && (
@@ -344,7 +474,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   buttonText: {
-    color: "black",
+    color: "white",
     fontSize: 16,
     fontWeight: "bold",
   },

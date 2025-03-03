@@ -142,6 +142,17 @@ export default function Page() {
       });
       const data: ApiResponse = validation.data;
       if (data.result.status === 'ACCEPTED') {
+        await axios.request({
+          method: ConfigVariables.api.trip.userJoinTrip.method,
+          url: ConfigVariables.api.trip.userJoinTrip.url,
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+          data:{
+            tripId: travelData.travel?.id,
+          }
+        })
+        console.log('vinculado al viaje '+travelData.travel?.id);
         Alert.alert(
           "Pago exitoso",
           "Tu pago ha sido procesado con éxito, se le notificará al conductor",
@@ -215,18 +226,17 @@ export default function Page() {
     <View
       style={[
         styles.container,
-        { backgroundColor: theme === "dark" ? "#2d2c24" : "white" },
+        { backgroundColor: theme === "dark" ? "#2d2c24" : "#024059" },
       ]}
     >
       <ScrollView showsVerticalScrollIndicator={true} contentContainerStyle={{ paddingBottom: 20 }}>
         <View style={styles.header}>
           <Ionicons name="car" size={24} 
-          color={theme === "dark" ? "#AAAAAA" : "#888888"}
+          color={theme === "dark" ? "white" : "white"}
            />
           <Text
-            style={[styles.headerText, theme === "dark" && styles.headerText2]}
-          >
-            NUEVO VIAJE
+            style={[styles.headerText, theme === "dark" && styles.headerText2]}>
+            Nuevo viaje
           </Text>
         </View>
 
@@ -265,19 +275,19 @@ export default function Page() {
         <View style={styles.tripInfoContainer}>
 
           <View style={styles.infoItem}>
-            <Ionicons name="calendar-outline" size={24} color="#0088FF" />
+            <Ionicons name="calendar-outline" size={24} color="white" />
             <Text style={styles.infoText}>
               Fecha y hora: {travelData.travel?.beginDate.toString() || 'Fecha no disponible'}
             </Text>
           </View>
 
           <View style={styles.infoItem}>
-            <Ionicons name="cash-outline" size={24} color="#0088FF" />
+            <Ionicons name="cash-outline" size={24} color="white" />
             <Text style={styles.infoText}>Costo total: ${travelData.travel?.price} COP</Text>
           </View>
 
           <View style={styles.infoItem}>
-            <Ionicons name="location-outline" size={24} color="#0088FF" />
+            <Ionicons name="location-outline" size={24} color="white" />
             <Text style={styles.infoText}>Distancia: 5.2 km</Text>
           </View>
         </View>
@@ -349,9 +359,10 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   headerText: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
     marginLeft: 8,
+    color: "white",
   },
   headerText2: {
     fontSize: 22,
@@ -360,7 +371,7 @@ const styles = StyleSheet.create({
     color: "white",
   },
   driverCard: {
-    backgroundColor: "white",
+    backgroundColor: "#1B8CA6",
     borderRadius: 12,
     padding: 16,
     flexDirection: "row",
@@ -381,15 +392,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   driverInfo: {
+    
     marginLeft: 16,
     flex: 1,
   },
   driverName: {
+    color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },
   carInfo: {
-    color: "#666",
+    color: "white",
     marginVertical: 4,
   },
   ratingContainer: {
@@ -397,20 +410,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   rating: {
+    color: "white",
     marginLeft: 4,
     fontWeight: "bold",
   },
   meetingPoint: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#fc9414",
     padding: 12,
     borderRadius: 8,
     marginBottom: 20,
   },
   meetingPointTitle: {
+    color: "white",
     fontWeight: "bold",
     fontSize: 16,
   },
   meetingPointValue: {
+    color: "white",
     fontSize: 16,
     marginTop: 4,
   },
@@ -434,7 +450,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   tripInfoContainer: {
-    backgroundColor: "white",
+    backgroundColor: "#fc9414",
     borderRadius: 12,
     padding: 16,
     marginTop: 8,
@@ -446,6 +462,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   infoText: {
+    color: "white",
     marginLeft: 12,
     fontSize: 16,
   },
