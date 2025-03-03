@@ -12,7 +12,7 @@ import {
 import { useRouter } from "expo-router";
 import { ConfigVariables } from "./config/config";
 import axios from "axios";
-import { ApiResponse } from "@/types/api-response.type";
+import { ApiResponse } from "./types/api-response.type";
 import { MsgBox} from './styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
