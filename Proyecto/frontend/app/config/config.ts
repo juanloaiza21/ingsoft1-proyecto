@@ -16,7 +16,7 @@ export const ConfigVariables = {
         url: `${url}/users/`,
       },
       update: {
-        method: 'PUT',
+        method: 'PATCH',
         url: `${url}/users/`,
       },
       getOne: {
