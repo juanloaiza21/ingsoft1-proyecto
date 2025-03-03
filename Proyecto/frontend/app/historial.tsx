@@ -21,7 +21,20 @@ import { ApiResponse } from "./types/api-response.type";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
-// Función simulada para obtener el historial de viajes desde el backend
+interface TravelOption {
+  "id": string,
+  "origin": string,
+  "destination": string,
+  "departureDate": string,
+  "beginDate": string,
+  "endDate": string,
+  "status": string,
+  "driverId": string,
+  "price": number,
+  "createdAt": string,
+  "updatedAt": string,
+}
+
 
 export default function Historial(): JSX.Element {
 
@@ -92,6 +105,65 @@ export default function Historial(): JSX.Element {
       return trips;
     }
   };
+  
+  const handleDriverPress = async (item: Trip) => {
+    try {
+      if (!item.driverId) {
+        try {
+          await AsyncStorage.setItem('currentTravelData', JSON.stringify({ 
+            travel: item, 
+            driver: null
+          }));
+          router.navigate('./newTrip');
+        } catch (error) {
+          console.error('Error saving travel data to AsyncStorage:', error);
+        }
+      }
+      else{
+        const petition = await axios.request({
+          method: ConfigVariables.api.driver.getOne.method,
+          url: `${ConfigVariables.api.driver.getOne.url}${item.driverId}`,
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+          },
+        })
+        const driver: ApiResponse = petition.data;
+        const calf = await axios.request({
+          method: ConfigVariables.api.calification.getProm.method,
+          url: `${ConfigVariables.api.calification.getProm.url}${driver.result.id}`,
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+          },
+        })
+        const calification: ApiResponse = calf.data;
+        driver.result.calification = calification.result;
+        const petitionUser = await axios.request({
+          method: ConfigVariables.api.user.getOne.method,
+          url: `${ConfigVariables.api.user.getOne.url}${driver.result.id}`,
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+          },
+        });
+
+        const user: ApiResponse = petitionUser.data;
+
+        // Save travel and driver data to AsyncStorage
+        try {
+          await AsyncStorage.setItem('currentTravelData', JSON.stringify({ 
+            travel: item, 
+            driver: driver.result,
+            user: user.result
+          }));
+          console.log('Travel data saved to AsyncStorage');
+          router.navigate('./newTrip');
+        } catch (error) {
+          console.error('Error saving travel data to AsyncStorage:', error);
+        }
+      }
+    } catch (error) {
+      console.error( error);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -111,17 +183,10 @@ export default function Historial(): JSX.Element {
     setSelectedTrip(null);
   };
 
-  const handleDriverPress = () => {
-    // Navegar a la página driverProfile.tsx
-    router.push("/driverProfile");
-    // Opcionalmente, cerrar el modal
-    closeModal();
-  };
-
   const renderTripItem = ({ item }: { item: Trip }) => (
     <TouchableOpacity
       style={styles.tripItem}
-      onPress={() => handleTripPress(item)}
+      onPress={() => handleDriverPress(item)}
     >
       <Text style={styles.tripText}>Viaje: {item.id}</Text>
       <Text>Fecha de inicio: {item.beginDate.toString()}</Text>
@@ -154,43 +219,7 @@ export default function Historial(): JSX.Element {
         transparent={true}
         onRequestClose={closeModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {selectedTrip && (
-              <>
-                <TouchableOpacity
-                  onPress={handleDriverPress}
-                  style={styles.driverImageContainer}
-                >
-                  <Image
-                  source={require('../assets/images/Daguilastrico.jpeg')}
-                  style={styles.driverImage}
-                  />
-                </TouchableOpacity>
-                <View style={styles.detailsContainer}>
-                  <Text style={styles.detailText}>
-                    Finalizado: {selectedTrip.endDate.toString()}
-                  </Text>
-                  <Text style={styles.detailText}>
-                    Precio: {selectedTrip.price}
-                  </Text>
-                </View>
 
-                <View style={{ marginBottom: 15 }}>
-                <Button
-                  title="Ver perfil del Conductor del viaje"
-                  onPress={() => {
-                    closeModal();
-                    router.push("/driverProfile");
-                  }}
-                />
-                </View>
-                <Button title="Cerrar" onPress={closeModal} color = "#c91905"/>
-          
-              </>
-            )}
-          </View>
-        </View>
       </Modal>
     </View>
   );
