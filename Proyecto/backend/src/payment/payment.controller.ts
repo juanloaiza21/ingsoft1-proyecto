@@ -56,4 +56,10 @@ export class PaymentController {
   async getPaymentById(@Query('collection_id') id: string) {
     return await this.paymentService.getPaymentById(id);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('/bill/:id')
+  async getBill(@Param('id') id: string) {
+    return await this.paymentService.getBill(id);
+  }
 }

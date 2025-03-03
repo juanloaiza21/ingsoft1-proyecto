@@ -3,8 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from "r
 import { useRouter } from "expo-router";
 import { ConfigVariables } from "./config/config";
 import axios from "axios";
-import { ApiResponse } from "../app/types/api-response.type";
-import { MsgBox } from './styles';
+import { ApiResponse } from "./types/api-response.type";
+import { MsgBox} from './styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
