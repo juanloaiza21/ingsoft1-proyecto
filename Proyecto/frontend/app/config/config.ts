@@ -16,7 +16,7 @@ export const ConfigVariables = {
         url: `${url}/users/`,
       },
       update: {
-        method: 'PUT',
+        method: 'PATCH',
         url: `${url}/users/`,
       },
       getOne: {
@@ -115,7 +115,7 @@ export const ConfigVariables = {
       },
       driverCreateTrip: {
         method: 'POST',
-        url: `${url}/trip/driver-create-trip/`,
+        url: `${url}/trip/driver-solicitate-trip/`,
       },
       getAll: {
         method: 'GET',
