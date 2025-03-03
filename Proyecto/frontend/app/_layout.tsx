@@ -1,16 +1,26 @@
 // app/_layout.tsx
 import React from "react";
-import { Stack } from "expo-router";
-import { ThemeProvider } from "./context/themeContext"; // Importa el ThemeProvider
+import { Stack, Slot } from "expo-router";
+import { ThemeProvider } from "./context/themeContext";
+import BottomNavBar from "./BottomNavBar";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from 'expo-status-bar';
 
 export default function Layout(): JSX.Element {
   return (
     <ThemeProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false, // Puedes configurar opciones globales aquí
-        }}
-      />
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#024059" }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: "#F0F0F0" },
+          }}
+        >
+          <Slot />
+        </Stack>
+        <BottomNavBar />
+      </SafeAreaView>
+      <StatusBar hidden />
     </ThemeProvider>
   );
 }

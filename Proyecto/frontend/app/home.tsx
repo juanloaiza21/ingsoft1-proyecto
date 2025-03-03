@@ -1,143 +1,225 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, TouchableOpacity, Image, View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useTheme } from "./context/themeContext";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+
+// AnimatedButton Component
+const AnimatedButton = ({
+  onPress,
+  delay = 0,
+  style,
+  children,
+}: {
+  onPress: () => void;
+  delay?: number;
+  style?: any;
+  children: React.ReactNode;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(scaleAnim, {
+      toValue: 1,
+      duration: 500,
+      delay,
+      useNativeDriver: true,
+    }).start();
+  }, [scaleAnim, delay]);
+
+  return (
+    <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
+      <LinearGradient
+        colors={["#fc9414", "#fc9414"]} // Gradient colors; adjust as needed
+        start={[0, 0]}
+        end={[1, 1]}
+        style={styles.gradientContainer}
+      >
+        <TouchableOpacity onPress={onPress} style={styles.mainButton}>
+          {children}
+        </TouchableOpacity>
+      </LinearGradient>
+    </Animated.View>
+  );
+};
 
 export default function Home(): JSX.Element {
-  const router = useRouter(); //para navegar a otra pantalla
-  const { theme } = useTheme(); //para cambiar el tema
+  const router = useRouter(); // for navigation
+  const { theme } = useTheme(); // for theme changes
 
+  // Animated value for the logo's horizontal position (starts off-screen to the right)
+  const logoAnim = useRef(new Animated.Value(300)).current;
+  
+  useEffect(() => {
+    // Animate the logo from off-screen right (300) to its final position (0) with a bounce effect
+    Animated.spring(logoAnim, {
+      toValue: 0,
+      friction: 4,
+      tension: 5,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const AnimatedText = () => {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+  
+    useEffect(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000, // 2 seconds fade-in
+        useNativeDriver: true,
+      }).start();
+    }, [fadeAnim]);
+  
+    return (
+      <Animated.Text style={[styles.animatedHeader, { opacity: fadeAnim }]}>
+        ¿A dónde{"\n"}vamos gente?
+      </Animated.Text>
+    );
+  };
 
   return (
     <View
       style={[
         styles.container,
-        { backgroundColor: theme === "dark" ? "#2d2c24" : "white" },
+        { backgroundColor: theme === "dark" ? "#2d2c24" : "#024059" },
       ]}
     >
       {/* Top Bar */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.push("/settings")}>
-          <Image
-            source={require("../assets/images/settings-icon.png")}
-            style={styles.settingsIcon}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Logo central */}
-      <View style={styles.logoContainer}>
+        {/* Left: App Name Image */}
         <Image
+          source={require("../assets/images/Nombre (2).png")} // Replace with your app name image
+          style={styles.appNameImage}
+          resizeMode="contain"
+        />
+        {/* Right: Animated Logo */}
+        <Animated.Image
           source={
             theme === "dark"
-              ? require("../assets/images/icon-black.png") // Logo para modo oscuro
-              : require("../assets/images/logo.png") // Logo para modo claro
+              ? require("../assets/images/icon-black.png")
+              : require("../assets/images/icon-black.png")
           }
-          style={styles.centerLogo}
+          style={[
+            styles.animatedLogo,
+            { transform: [{ translateX: logoAnim }] },
+          ]}
+          resizeMode="contain"
         />
       </View>
-
-          <View>
-            <Text style={[styles.title, theme === "dark" && styles.title2]}>
-              Bienvenido a Owlwheels
-            </Text>
+      {/* Animated Text below the Top Bar */}
+      <AnimatedText/>
+       {/* Animated Buttons */}
+       <View style={styles.buttonContainer}>
+        <View style={styles.row}>
+          <AnimatedButton onPress={() => router.push("/solicitudViaje")} delay={0}>
+          <View style={styles.buttonContent}>
+            <Ionicons name="car-outline" size={30} color="white" style={{ marginRight: 5 }} />
+            <Text style={styles.buttonText}>Solicitar un Viaje</Text>
           </View>
-      {/* Botones principales */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.mainButton}
-          onPress={() => router.push("/solicitudViaje")}
-        >
-          <Text style={styles.buttonText}>Solicitar un Viaje</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.mainButton}
-          onPress={() => router.push("/publishTravel")}
-        >
-          <Text style={styles.buttonText}>Publicar un viaje</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.mainButton}
+          </AnimatedButton>
+          <AnimatedButton onPress={() => router.push("/publishTravel")} delay={300}>
+          <View style={styles.buttonContent}>
+            <Ionicons name="pencil-outline" size={30} color="white" style={{ marginRight: 5 }} />
+            <Text style={styles.buttonText}>Publicar un viaje</Text>
+          </View>
+          </AnimatedButton>
+        </View>
+        <AnimatedButton
           onPress={() => router.push("/agreedTrips")}
+          delay={600}
+          style={{ alignSelf: "center", marginTop: 20 }}
         >
-          <Text style={styles.buttonText}>Viajes programados</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.mainButton}
-          onPress={() => router.push("/historial")}
-        >
-          <Text style={styles.buttonText}>Historial</Text>
-        </TouchableOpacity>
+          <View style={styles.buttonContent}>
+            <Ionicons name="calendar-outline" size={30} color="white" style={{ marginRight: 5 }} />
+            <Text style={styles.buttonText}>Viajes programados</Text>
+          </View>
+        </AnimatedButton>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  title:{
-    fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: "center",
+  gradientContainer: {
+    borderRadius: 10,
+    marginBottom: 20,
+    width: 150,
   },
-  title2:{
-    fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: "center",
-    color: "white",
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginHorizontal: 10,
   },
   container: {
     flex: 1,
-    backgroundColor: "#fff",
     paddingHorizontal: 20,
   },
+  buttonContent: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
   topBar: {
-    marginTop: 30,
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
     alignItems: "center",
-    padding: 15,
+    backgroundColor: "#fc9414",
+    borderRadius: 20,
+    width: "100%",
   },
-
-  settingsIcon: {
-    width: 50,
-    height: 50,
+  appNameImage: {
+    width: 120, // Adjust as needed
+    height: 40, // Adjust as needed
+    marginHorizontal: 20,
   },
-  logoContainer: {
-    alignItems: "center",
-    marginTop: 30, // Espacio entre la barra superior y el logo
-    marginBottom: 10, // Espacio entre el logo y los botones
+  animatedLogo: {
+    width: 60, // Adjust as needed
+    height: 60, // Adjust as needed
+    marginHorizontal: 20,
   },
-  centerLogo: {
-    width: 200,
-    height: 200,
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginVertical: 20,
+    paddingVertical: 20,
+  },
+  title2: {
+    color: "white",
   },
   buttonContainer: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
+    marginVertical: 20,
+    marginHorizontal: -10,
+    
   },
   mainButton: {
-    backgroundColor: "#007AFF",
     paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    marginBottom: 20,
-    width: "100%",
+    paddingHorizontal: 10,
     alignItems: "center",
-    borderWidth: 2, // Grosor del borde
-    borderColor: "black", // Color del borde negro
-  },
-  linkButton: {
-    width: "100%",
-    alignItems: "center",
-    textDecorationLine: "none",
+    width: 150,
+    height: 100,
+    justifyContent: "center",
+    
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 18,
+    color: "white",
     fontWeight: "bold",
+    textAlign: "center",
+    justifyContent: "center",
+    fontSize: 15,
+  },
+  animatedHeader: {
+    fontSize: 45,
+    fontWeight: "bold",
+    textAlign: "left",
+    alignItems: "center",
+    marginVertical: 50,
+    color: "white",
+    backgroundColor: "#1B8CA6",
+    borderRadius: 30,
+    marginHorizontal: -10,
+    padding: 20,
   },
 });

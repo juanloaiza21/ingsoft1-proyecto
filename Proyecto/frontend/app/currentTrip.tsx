@@ -26,11 +26,11 @@ export default function Page() {
 
   return (
     
-    <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "white" }]}
+    <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "#024059" }]}
     >
       <View style={styles.header}
       >
-        <Ionicons name="car" size={24} color={theme === "dark" ? "#AAAAAA" : "#888888"}
+        <Ionicons name="car" size={24} color={theme === "dark" ? "#AAAAAA" : "white"}
         />
         <Text style={[styles.headerText, theme === "dark" && styles.headerText2]}>
         VIAJE ACTUAL</Text>
@@ -38,7 +38,7 @@ export default function Page() {
 
       <View style={styles.driverCard}>
         <View style={styles.driverIcon}>
-          <Ionicons name="person" size={40} color="black" />
+          <Ionicons name="person" size={40} color="white"  />
         </View>
         <View style={styles.driverInfo}>
           <Text style={styles.driverName}>Juan Pérez</Text>
@@ -54,7 +54,7 @@ export default function Page() {
         <Text style={styles.meetingPointTitle}>Punto de encuentro:</Text>
         <Text style={styles.meetingPointValue}>Detrás del CYT</Text>
       </View>
-      <View style={styles.meetingPoint}>
+      <View style={styles.meetingPoint2}>
         <Text style={styles.meetingPointTitle}>Destino:</Text>
         <Text style={styles.meetingPointValue}>Centro comercial Titán plaza</Text>
       </View>
@@ -79,22 +79,22 @@ export default function Page() {
       <View style={styles.tripInfoContainer}>
 
       <View style={styles.infoItem}>
-          <Ionicons name="calendar-outline" size={24} color="#0088FF" />
+          <Ionicons name="calendar-outline" size={24} color="white" />
           <Text style={styles.infoText}>Fecha y hora: 28/02/24 a las 16:45</Text>
         </View>
 
         <View style={styles.infoItem}>
-          <Ionicons name="time-outline" size={24} color="#0088FF" />
+          <Ionicons name="time-outline" size={24} color="white" />
           <Text style={styles.infoText}>Tiempo estimado: 35 min</Text>
         </View>
 
         <View style={styles.infoItem}>
-          <Ionicons name="cash-outline" size={24} color="#0088FF" />
+          <Ionicons name="cash-outline" size={24} color="white" />
           <Text style={styles.infoText}>Costo total: $14.000</Text>
         </View>
 
         <View style={styles.infoItem}>
-          <Ionicons name="location-outline" size={24} color="#0088FF" />
+          <Ionicons name="location-outline" size={24} color="white" />
           <Text style={styles.infoText}>Distancia: 5.2 km</Text>
         </View>
       </View>
@@ -130,12 +130,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
+    marginVertical: 0,
+    marginBottom: 5,
   },
   headerText: {
     fontSize: 22,
     fontWeight: 'bold',
     marginLeft: 8,
+    color: "white",
   },
   headerText2: {
     color: "white",
@@ -144,12 +146,12 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   driverCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#1B8CA6',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 5,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -159,7 +161,6 @@ const styles = StyleSheet.create({
   driverIcon: {
     width: 60,
     height: 60,
-    backgroundColor: '#f0f0f0',
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
@@ -171,10 +172,11 @@ const styles = StyleSheet.create({
   driverName: {
     fontSize: 18,
     fontWeight: 'bold',
+    color:"white",
   },
   carInfo: {
-    color: '#666',
     marginVertical: 4,
+    color:"white",
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -183,34 +185,43 @@ const styles = StyleSheet.create({
   rating: {
     marginLeft: 4,
     fontWeight: 'bold',
+    color:"white",
   },
   meetingPoint: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#1B8CA6',
     padding: 12,
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 5,
+  },
+  meetingPoint2: {
+    backgroundColor: '#1B8CA6',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
   },
   meetingPointTitle: {
     fontWeight: 'bold',
     fontSize: 16,
+    color: "white",
   },
   meetingPointValue: {
     fontSize: 16,
     marginTop: 4,
+    color: "white",
   },
   button: {
-    backgroundColor: '#0088FF',
+    backgroundColor: '#fc9414',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   buttonRed: {
     backgroundColor: '#c91905',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   buttonText: {
     color: 'white',
@@ -218,10 +229,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   tripInfoContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#1B8CA6',
     borderRadius: 12,
     padding: 16,
-    marginTop: 8,
+    marginTop: 0 ,
   },
   infoItem: {
     flexDirection: 'row',
@@ -231,6 +242,7 @@ const styles = StyleSheet.create({
   infoText: {
     marginLeft: 12,
     fontSize: 16,
+    color: 'white',
   },
   modalOverlay: {
     position: 'absolute',
