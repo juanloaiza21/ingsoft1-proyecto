@@ -16,13 +16,13 @@ export default function BottomNavBar() {
   return (
     <View style={styles.navContainer}>
       <TouchableOpacity onPress={() => router.push("/historial")}>
-        <Ionicons name="time-outline" size={24} color="black" />
+        <Ionicons name="time-outline" size={24} color="white" />
       </TouchableOpacity>
       <TouchableOpacity onPress={() => router.push("/home")}>
-        <Ionicons name="home-outline" size={24} color="black" />
+        <Ionicons name="home-outline" size={24} color="white" />
       </TouchableOpacity>
       <TouchableOpacity onPress={() => router.push("/settings")}>
-        <Ionicons name="settings-outline" size={24} color="black" />
+        <Ionicons name="settings-outline" size={24} color="white" />
       </TouchableOpacity>
     </View>
   );
@@ -33,7 +33,7 @@ const styles = {
     flexDirection: "row",
     justifyContent: "space-around",
     paddingVertical: 10,
-    backgroundColor: "#e6e6e6",
+    backgroundColor: "#1B8CA6",
     borderRadius: 20,
     marginHorizontal: 20,
     marginBottom: 10,

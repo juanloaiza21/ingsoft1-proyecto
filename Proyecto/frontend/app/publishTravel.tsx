@@ -1,18 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTheme } from "./context/themeContext";
-
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Animated,
+  Image,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import Slider from "@react-native-community/slider";
 
 export default function PublishTravel(): JSX.Element {
-  const { theme } = useTheme(); //para cambiar el tema
+  const { theme } = useTheme(); // para cambiar el tema
 
   const [origin, setOrigin] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
@@ -21,7 +21,6 @@ export default function PublishTravel(): JSX.Element {
   const [showPicker, setShowPicker] = useState<boolean>(false);
   const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
   const [price, setPrice] = useState<string>(""); // Using string for numeric input
-  const [seats, setSeats] = useState<number>(1);
   const [published, setPublished] = useState<boolean>(false);
 
   // Validations
@@ -72,22 +71,69 @@ export default function PublishTravel(): JSX.Element {
     // Add any additional logic (e.g., API calls) here.
   };
 
+  // Animated value for the top bar logo (unchanged)
+  const logoAnim = useRef(new Animated.Value(300)).current;
+  useEffect(() => {
+    Animated.spring(logoAnim, {
+      toValue: 0,
+      friction: 4,
+      tension: 5,
+      useNativeDriver: true,
+    }).start();
+  }, [logoAnim]);
+
+  // Animated value for the new icon-black image that will animate below the button
+  const publishAnim = useRef(new Animated.Value(300)).current;
+  useEffect(() => {
+    if (published) {
+      Animated.timing(publishAnim, {
+        toValue: -400, // Adjust this value as needed to fully move off-screen to the right
+        duration: 1500,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [published, publishAnim]);
+
   return (
     <View
       style={[
         styles.container,
-        { backgroundColor: theme === "dark" ? "#2d2c24" : "white" },
+        { backgroundColor: theme === "dark" ? "#2d2c24" : "#024059" },
       ]}
     >
+      <View style={styles.topBar}>
+        {/* Left: App Name Image (unchanged) */}
+        <Image
+          source={require("../assets/images/Nombre (2).png")}
+          style={styles.appNameImage}
+          resizeMode="contain"
+        />
+        {/* Right: Animated Logo */}
+        <Animated.Image
+          source={
+            theme === "dark"
+              ? require("../assets/images/icon-black.png")
+              : require("../assets/images/icon-black.png")
+          }
+          style={[
+            styles.animatedLogo,
+            { transform: [{ translateX: logoAnim }] },
+          ]}
+          resizeMode="contain"
+        />
+      </View>
       <Text style={[styles.title, theme === "dark" && styles.title2]}>
         Publica un viaje
       </Text>
 
       {/* Origen */}
       <TextInput
-        style={[styles.input, !isOriginValid && styles.inputError]}
+        style={[
+          styles.input,
+          { backgroundColor: origin.trim() ? "#ffc073" : "#fff" },
+          !isOriginValid && styles.inputError,
+        ]}
         placeholder="Origen"
-        
         placeholderTextColor={theme === "dark" ? "#AAAAAA" : "#888888"}
         value={origin}
         onChangeText={setOrigin}
@@ -96,7 +142,11 @@ export default function PublishTravel(): JSX.Element {
 
       {/* Destino */}
       <TextInput
-        style={[styles.input, !isDestinationValid && styles.inputError]}
+        style={[
+          styles.input,
+          { backgroundColor: destination.trim() ? "#ffc073" : "#fff" },
+          !isDestinationValid && styles.inputError,
+        ]}
         placeholder="Destino"
         placeholderTextColor={theme === "dark" ? "#AAAAAA" : "#888888"}
         value={destination}
@@ -110,7 +160,6 @@ export default function PublishTravel(): JSX.Element {
           if (!published) {
             // Always start by picking the date.
             setPickerMode("date");
-            
             setShowPicker(true);
           }
         }}
@@ -119,6 +168,7 @@ export default function PublishTravel(): JSX.Element {
           styles.dateInput,
           !isDateValid && styles.inputError,
           published && styles.disabledInput,
+          { backgroundColor: date ? "#ffc073" : "#fff" },
         ]}
         disabled={published}
       >
@@ -137,7 +187,11 @@ export default function PublishTravel(): JSX.Element {
 
       {/* Precio */}
       <TextInput
-        style={[styles.input, !isPriceValid && styles.inputError]}
+        style={[
+          styles.input,
+          { backgroundColor: price.trim() ? "#ffc073" : "#fff" },
+          !isPriceValid && styles.inputError,
+        ]}
         placeholder="Precio ($)"
         placeholderTextColor={theme === "dark" ? "#AAAAAA" : "#888888"}
         keyboardType="numeric"
@@ -145,27 +199,6 @@ export default function PublishTravel(): JSX.Element {
         onChangeText={handlePriceChange}
         editable={!published}
       />
-
-      {/* Asientos */}
-      <View style={styles.sliderContainer}>
-        <Text style={[styles.sliderLabel, theme === "dark" && styles.sliderLabel2]}
-
-        
-        >
-          Número de asientos disponibles: {seats}
-        </Text>
-        <Slider
-          style={styles.slider}
-          minimumValue={1}
-          maximumValue={5}
-          step={1}
-          value={seats}
-          onValueChange={setSeats}
-          minimumTrackTintColor="#007AFF"
-          maximumTrackTintColor="#ccc"
-          disabled={published}
-        />
-      </View>
 
       {/* Publicar Button */}
       <TouchableOpacity
@@ -175,12 +208,23 @@ export default function PublishTravel(): JSX.Element {
           published && styles.buttonSuccess,
         ]}
         onPress={handlePublish}
-        disabled={!isFormValid || published}
       >
         <Text style={styles.buttonText}>
           {published ? "Viaje publicado con éxito" : "Publicar"}
         </Text>
       </TouchableOpacity>
+
+      {/* Animated icon-black image below the Publicar button */}
+      {published && (
+        <Animated.Image
+          source={require("../assets/images/icon-black.png")}
+          style={[
+            styles.publishIcon,
+            { transform: [{ translateX: publishAnim }] },
+          ]}
+          resizeMode="contain"
+        />
+      )}
     </View>
   );
 }
@@ -188,7 +232,7 @@ export default function PublishTravel(): JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
     backgroundColor: "#fff",
   },
   title: {
@@ -196,6 +240,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "center",
+    color: "white",
   },
   title2: {
     color: "white",
@@ -204,17 +249,37 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
+  appNameImage: {
+    width: 120,
+    height: 40,
+    marginHorizontal: 20,
+  },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: -15,
+    borderRadius: 20,
+    marginHorizontal: -10,
+    marginVertical: 5,
+  },
+  animatedLogo: {
+    width: 60,
+    height: 60,
+    marginHorizontal: 20,
+  },
   input: {
     height: 50,
     borderColor: "#ccc",
     borderWidth: 1,
-    borderRadius: 5,
+    borderRadius: 35,
     paddingHorizontal: 10,
     marginBottom: 15,
     justifyContent: "center",
+    borderColor: "#fc9414",
   },
   inputError: {
-    borderColor: "red",
+    borderColor: "#fc9414",
   },
   disabledInput: {
     backgroundColor: "#f0f0f0",
@@ -243,7 +308,7 @@ const styles = StyleSheet.create({
     height: 40,
   },
   button: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#fc9414",
     paddingVertical: 15,
     borderRadius: 5,
     alignItems: "center",
@@ -259,5 +324,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  publishIcon: {
+    width: 220,
+    height: 220,
+    alignSelf: "center",
+    marginTop: 20,
   },
 });
