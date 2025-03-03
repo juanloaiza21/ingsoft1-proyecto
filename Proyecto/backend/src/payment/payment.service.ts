@@ -10,7 +10,6 @@ import {
   MerchantOrder,
 } from 'mercadopago';
 import axios from 'axios';
-import { connect } from 'http2';
 import { BillStatus } from '@prisma/client';
 
 @Injectable()
