@@ -1,39 +1,83 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Animated, 
+  Dimensions, 
+  ActivityIndicator, 
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+  Easing
+} from "react-native";
 import { useRouter } from "expo-router";
 import { ConfigVariables } from "./config/config";
 import axios from "axios";
 import { ApiResponse } from "./types/api-response.type";
-import { MsgBox} from './styles';
+import { MsgBox } from './styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function Login() {
+  // State
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [messageType, setMessageType] = useState<string>("");
-  const [fadeAnim] = useState(new Animated.Value(0)); // Animación de fade-in
-  const [welcomeVisible, setWelcomeVisible] = useState(false); // Estado para manejar la visibilidad del mensaje
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [usernameFocus, setUsernameFocus] = useState<boolean>(false);
+  const [passwordFocus, setPasswordFocus] = useState<boolean>(false);
+  
+  // Animation refs
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(0)).current;
+  const formSlide = useRef(new Animated.Value(50)).current;
+  const formOpacity = useRef(new Animated.Value(0)).current;
+  const buttonAnim = useRef(new Animated.Value(1)).current;
+  const successAnim = useRef(new Animated.Value(0)).current;
+  const circleSize = useRef(new Animated.Value(0)).current;
+  const checkmarkStroke = useRef(new Animated.Value(0)).current;
 
-  const router = useRouter(); // para navegar a otra pantalla
-
-  // Animación para el logo
-  const logoScale = useState(new Animated.Value(0))[0];
-
+  const router = useRouter();
+  
+  // Entry animations
   useEffect(() => {
-    Animated.spring(logoScale, {
-      toValue: 1,
-      friction: 3,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
+    // Sequence of animations
+    Animated.sequence([
+      // 1. Logo animation
+      Animated.spring(logoScale, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      
+      // 2. Form slide in and fade
+      Animated.parallel([
+        Animated.timing(formSlide, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.back(1.5)),
+        }),
+        Animated.timing(formOpacity, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
 
     appOn();
-  });
+  }, []);
 
   const appOn = async () => {
     try {
-      const data = await axios.request({
+      await axios.request({
         method: 'GET',
         url: ConfigVariables.api.appOn,
       });
@@ -45,8 +89,11 @@ export default function Login() {
   };
 
   const handleLogin = async (credentials: { email: string, password: string }) => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
     try {
-      const petititon = await axios.request({
+      const petition = await axios.request({
         method: ConfigVariables.api.auth.login.method,
         url: ConfigVariables.api.auth.login.url,
         data: {
@@ -54,28 +101,64 @@ export default function Login() {
           password: credentials.password,
         },
       });
-      const data: ApiResponse = petititon.data;
-      const { result, statusCode } = data;
-      if (statusCode !== 200) {
-        handleMessage('Usuario o contraseña incorrectos');
-      }
+      const data: ApiResponse = petition.data;
+      const { result } = data;
       await storeTokens(result.access_token, result.refresh_token);
       
-      // Aquí es donde se activa la animación de bienvenida después de un login exitoso
-      setWelcomeVisible(true);
-      // Animación de desvanecimiento del texto
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 2000,  // Asegúrate de que sea suficientemente largo para visualizar la animación
-        useNativeDriver: true,
-      }).start();
-
+      // Success animation sequence
+      animateSuccess();
+      
+      // Navigate after animations complete
       setTimeout(() => {
         router.push("/home");
-      }, 2000); // Navegar después de 2 segundos (cuando termine la animación)
+      }, 2500);
     } catch (error) {
       console.log(error);
+      setIsLoading(false);
+      handleMessage('Usuario o contraseña incorrectos');
+      
+      // Shake animation for error
+      shakeAnimation();
     }
+  };
+  
+  const shakeAnimation = () => {
+    Animated.sequence([
+      Animated.timing(buttonAnim, { toValue: 1.05, duration: 100, useNativeDriver: true }),
+      Animated.timing(buttonAnim, { toValue: 0.95, duration: 100, useNativeDriver: true }),
+      Animated.timing(buttonAnim, { toValue: 1.05, duration: 100, useNativeDriver: true }),
+      Animated.timing(buttonAnim, { toValue: 0.95, duration: 100, useNativeDriver: true }),
+      Animated.timing(buttonAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
+  };
+  
+  const animateSuccess = () => {
+    // Set success animation value to 1
+    Animated.timing(successAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+    
+    // Circular reveal animation
+    Animated.sequence([
+      Animated.timing(circleSize, {
+        toValue: 1,
+        duration: 700,
+        useNativeDriver: false,
+        easing: Easing.bezier(0.165, 0.84, 0.44, 1),
+      }),
+      Animated.timing(checkmarkStroke, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: false,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const storeTokens = async (accessToken: string, refreshToken: string) => {
@@ -92,131 +175,354 @@ export default function Login() {
     setMessageType(type);
   };
 
+  // Button press animation handlers
+  const handlePressIn = () => {
+    Animated.spring(buttonAnim, {
+      toValue: 0.95,
+      friction: 5,
+      tension: 50,
+      useNativeDriver: true,
+    }).start();
+  };
+  
+  const handlePressOut = () => {
+    Animated.spring(buttonAnim, {
+      toValue: 1,
+      friction: 5,
+      tension: 50,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Get screen dimensions
+  const { width, height } = Dimensions.get('window');
+  
+  // Success animation interpolations
+  const circleRadius = circleSize.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, width * 2]
+  });
+  
+  // Hide form when success animation is active
+  const formTransform = successAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0]
+  });
+
   return (
-    <View style={styles.container}>
-      <View style={styles.logoContainer}>
-        <Animated.Image
-          source={require("../assets/images/logo.png")}
-          style={[styles.logo, { transform: [{ scale: logoScale }] }]} // Animación de escala
-        />
-      </View>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    >
+      <LinearGradient
+        colors={["#024059", "#036280", "#024C66"]}
+        style={styles.background}
+        start={[0, 0]}
+        end={[1, 1]}
+      />
 
-      <View style={styles.inputContainer}>
-        <Text style={[styles.label, username && styles.labelFilled]}>Usuario</Text>
-        <TextInput
-          style={[styles.input, username && styles.inputFilled]}
-          placeholder="Ingresa tu usuario"
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-        />
-      </View>
-
-      <View style={styles.inputContainer}>
-        <Text style={[styles.label, password && styles.labelFilled]}>Contraseña</Text>
-        <TextInput
-          style={[styles.input, password && styles.inputFilled]}
-          placeholder="Ingresa tu contraseña"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-      </View>
-
-      <MsgBox type={messageType}>{message}</MsgBox>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => handleLogin({ email: username, password: password })}
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.buttonText}>Iniciar Sesión</Text>
-      </TouchableOpacity>
+        {/* Success Animation Layer */}
+        <Animated.View 
+          style={[
+            styles.successLayer,
+            { opacity: successAnim }
+          ]}
+          pointerEvents="none"
+        >
+          <Animated.View style={[
+            styles.successCircle,
+            {
+              width: circleRadius,
+              height: circleRadius,
+              borderRadius: circleRadius,
+            }
+          ]}>
+            <Animated.View style={[
+              styles.checkmarkContainer, 
+              { opacity: checkmarkStroke }
+            ]}>
+              <Ionicons name="checkmark-circle" size={100} color="white" />
+              <Animated.Text 
+                style={[
+                  styles.welcomeText, 
+                  { opacity: fadeAnim }
+                ]}
+              >
+                ¡Bienvenido a Owheels!
+              </Animated.Text>
+            </Animated.View>
+          </Animated.View>
+        </Animated.View>
 
-      {/* Animación de bienvenida */}
-      {welcomeVisible && (
-        <Animated.Text style={[styles.welcomeText, { opacity: fadeAnim }]}>
-          Bienvenido a Owheels 
-        </Animated.Text>
-      )}
+        {/* Normal Login Form */}
+        <Animated.View style={[
+          styles.formContainer,
+          { 
+            opacity: formOpacity, 
+            transform: [
+              { translateY: formSlide },
+              { scale: formTransform }
+            ] 
+          }
+        ]}>
+          <View style={styles.logoContainer}>
+            <Animated.Image
+              source={require("../assets/images/logo.png")}
+              style={[
+                styles.logo, 
+                { transform: [{ scale: logoScale }] }
+              ]}
+              resizeMode="contain"
+            />
+          </View>
 
-      <TouchableOpacity onPress={() => router.push("/register")}>
-        <Text style={styles.registerText}>¿No estás registrado?</Text>
-      </TouchableOpacity>
-    </View>
+          <View style={styles.formContent}>
+            <View style={[
+              styles.inputContainer,
+              usernameFocus && styles.inputContainerFocused
+            ]}>
+              <Ionicons 
+                name="person-outline" 
+                size={24} 
+                color={usernameFocus || username ? "#1B8CA6" : "#93A9B1"} 
+                style={styles.inputIcon} 
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Usuario o correo electrónico"
+                placeholderTextColor="#93A9B1"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                onFocus={() => setUsernameFocus(true)}
+                onBlur={() => setUsernameFocus(false)}
+              />
+            </View>
+
+            <View style={[
+              styles.inputContainer,
+              passwordFocus && styles.inputContainerFocused
+            ]}>
+              <Ionicons 
+                name="lock-closed-outline" 
+                size={24} 
+                color={passwordFocus || password ? "#1B8CA6" : "#93A9B1"} 
+                style={styles.inputIcon} 
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Contraseña"
+                placeholderTextColor="#93A9B1"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                onFocus={() => setPasswordFocus(true)}
+                onBlur={() => setPasswordFocus(false)}
+              />
+            </View>
+
+            {message ? (
+              <MsgBox type={messageType}>{message}</MsgBox>
+            ) : null}
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => handleLogin({ email: username, password: password })}
+              onPressIn={handlePressIn}
+              onPressOut={handlePressOut}
+              disabled={isLoading}
+            >
+              <Animated.View 
+                style={[
+                  styles.buttonContainer,
+                  { transform: [{ scale: buttonAnim }] }
+                ]}
+              >
+                <LinearGradient
+                  colors={["#fc9414", "#f57c00"]}
+                  start={[0, 0]}
+                  end={[1, 1]}
+                  style={styles.buttonGradient}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Text style={styles.buttonText}>Iniciar Sesión</Text>
+                  )}
+                </LinearGradient>
+              </Animated.View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.registerContainer}
+              onPress={() => router.push("/register")}
+            >
+              <Text style={styles.registerText}>¿No tienes una cuenta? </Text>
+              <Text style={styles.registerLink}>Registrate aquí</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  background: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingVertical: 40,
     paddingHorizontal: 20,
-    backgroundColor: "#024059", // Fondo azul oscuro
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: "center",
   },
   logoContainer: {
-    backgroundColor: "#fff", // Fondo blanco
-    borderRadius: 100, // Bordes redondeados
-    padding: 20, // Espaciado alrededor del logo
-    marginBottom: 40, // Espacio hacia abajo
+    backgroundColor: "#fff",
+    borderRadius: 100,
+    padding: 20,
+    marginBottom: 30,
     alignItems: "center",
     justifyContent: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   logo: {
     width: 150,
     height: 150,
-    opacity: 0.8,
+    opacity: 0.9,
+  },
+  formContent: {
+    width: '100%',
+    alignItems: "center",
   },
   inputContainer: {
-    marginBottom: 20,
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 12,
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    height: 60,
+    width: "100%",
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  label: {
-    marginBottom: 8,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#F2C572', // Amarillo claro para los labels
-    paddingLeft: 4,
+  inputContainerFocused: {
+    borderWidth: 2,
+    borderColor: "#1B8CA6",
+    backgroundColor: "rgba(255, 255, 255, 1)",
   },
-  labelFilled: {
-    color: '#1B8CA6', // Color del label cuando el input está lleno
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    height: 50,
-    backgroundColor: '#fff', // Fondo blanco para los campos de entrada
-    borderWidth: 1,
-    borderColor: '#F2C572',
-    borderRadius: 30,
-    paddingHorizontal: 20,
+    flex: 1,
+    height: "100%",
+    color: "#024059",
     fontSize: 16,
-    color: '#000', // Texto en negro
   },
-  inputFilled: {
-    backgroundColor: '#F2C572', // Color de fondo cuando el campo está completado
-  },
-  button: {
-    backgroundColor: "#FC9414", // Color naranja para el botón
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 5,
+  buttonContainer: {
     width: "100%",
+    borderRadius: 12,
+    overflow: "hidden",
+    marginTop: 10,
+    marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  buttonGradient: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     alignItems: "center",
-    marginVertical: 10,
+    justifyContent: "center",
+    minWidth: 200,
   },
   buttonText: {
-    color: "#fff", // Texto blanco en el botón
+    color: "white",
     fontWeight: "bold",
+    fontSize: 18,
+  },
+  registerContainer: {
+    flexDirection: 'row',
+    marginTop: 10,
   },
   registerText: {
-    color: "#fff", // Texto blanco para "¿No estás registrado?"
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: 16,
-    textAlign: 'center',
-    marginTop: 20,
+  },
+  registerLink: {
+    color: "#FC9414",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  successLayer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  successCircle: {
+    backgroundColor: '#11ac28', // Green color
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+  },
+  checkmarkContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   welcomeText: {
     fontSize: 24,
-    color: '#fff', // Texto blanco para el mensaje de bienvenida
+    color: 'white',
     fontWeight: 'bold',
     marginTop: 20,
+    textAlign: 'center',
   },
 });

@@ -15,12 +15,72 @@ import {
   Linking,
   Animated,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { ConfigVariables } from './config/config';
 
 export default function Settings() {
   const { theme } = useTheme();
-  const router = useRouter();
   const [faqVisible, setFaqVisible] = useState(false);
   const [logoutVisible, setLogoutVisible] = useState(false);
+  const [access_token, setAccess_token] = useState<string>('');
+  const [refresh_token, setRefresh_token] = useState<string>('');
+  const router = useRouter();
+
+  // Animation refs
+  const logoAnim = useRef(new Animated.Value(300)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const modalScaleAnim = useRef(new Animated.Value(0.8)).current;
+
+  // Get tokens from AsyncStorage
+  const getTokens = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      setAccess_token(accessToken ?? '');
+      setRefresh_token(refreshToken ?? '');
+    } catch (error) {
+      console.error('Error al recuperar tokens:', error);
+      return { accessToken: null, refreshToken: null };
+    }
+  };
+  
+  // Animation setup
+  useEffect(() => {
+    // Animate logo sliding in
+    Animated.spring(logoAnim, {
+      toValue: 0,
+      friction: 4,
+      tension: 5,
+      useNativeDriver: true,
+    }).start();
+    
+    // Fade in content
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+    
+    // Scale content up
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 6,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  useEffect(() => {
+    const loadTokens = async () => {
+      await getTokens();
+      if (access_token && refresh_token) {
+        console.log('Tokens recuperados correctamente');
+      }
+    };
+    loadTokens();
+  }, []);
 
   const handleSupportPress = () => {
     const email = 'diegosolorzanoyt@gmail.com';
@@ -44,36 +104,87 @@ export default function Settings() {
       .catch((err) => console.error('Error al intentar abrir el correo:', err));
   };
 
-  
-  const logoAnim = useRef(new Animated.Value(300)).current;
-  
-  useEffect(() => {
-    // Animate the logo from off-screen right (300) to its final position (0) with a bounce effect
-    Animated.spring(logoAnim, {
-      toValue: 0,
-      friction: 4,
-      tension: 5,
+  const handleLogOut = async () => {
+    try {
+      await axios.request({
+        method: ConfigVariables.api.auth.logout.method,
+        url: ConfigVariables.api.auth.logout.url,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
+      setLogoutVisible(true);
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    } finally {
+      router.push('/');
+    }
+  };
+
+  // Animation for FAQ Modal
+  const handleOpenFaq = () => {
+    setFaqVisible(true);
+    Animated.spring(modalScaleAnim, {
+      toValue: 1,
+      friction: 8,
+      tension: 40,
       useNativeDriver: true,
     }).start();
-  }, []);
+  };
+
+  const handleCloseFaq = () => {
+    Animated.timing(modalScaleAnim, {
+      toValue: 0.8,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setFaqVisible(false);
+    });
+  };
+
+  // Animation for button press
+  const buttonAnimValue = useRef(new Animated.Value(0)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(buttonAnimValue, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(buttonAnimValue, {
+      toValue: 0,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Create animated style for press effect
+  const animatePress = {
+    transform: [
+      {
+        scale: buttonAnimValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 0.95],
+        }),
+      },
+    ],
+  };
 
   return (
-
     <View
       style={[
         styles.container,
-        { backgroundColor: theme === 'dark' ? '#A67665' : '#024059' },
+        { backgroundColor: theme === 'dark' ? '#2d2c24' : '#024059' },
       ]}
     >
-
-<View style={styles.topBar}>
-        {/* Left: App Name Image */}
+      {/* Top Bar */}
+      <View style={styles.topBar}>
         <Image
-          source={require("../assets/images/Nombre (2).png")} // Replace with your app name image
+          source={require("../assets/images/Nombre (2).png")}
           style={styles.appNameImage}
           resizeMode="contain"
         />
-        {/* Right: Animated Logo */}
         <Animated.Image
           source={
             theme === "dark"
@@ -87,164 +198,186 @@ export default function Settings() {
           resizeMode="contain"
         />
       </View>
-      {/* Nuevo contenedor para el título y los botones */}
-      <View style={styles.contentContainer}>
-        {/* Header ORIGINAL: título sin cambios */}
-        <View style={styles.headerContainer2}>
-          <Text style={[styles.title, theme === 'dark' && styles.title2]}>
-            Ajustes
-          </Text>
-        </View>
-        {/* Botones de opciones ocupando el 100% del ancho del contenedor */}
-        <View style={styles.buttonContainer}>
-          <LinearGradient
-            colors={['#fc9414', "#fc9414"]}
-            start={[0, 0]}
-            end={[1, 1]}
-            style={styles.gradientButton}
+
+      {/* Page Title */}
+      <Animated.View 
+        style={{
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }],
+          width: '100%',
+          marginBottom: 20
+        }}
+      >
+        <LinearGradient
+          colors={['#1B8CA6', '#1B8CA6']}
+          start={[0, 0]}
+          end={[1, 1]}
+          style={styles.pageTitleContainer}
+        >
+          <Text style={styles.pageTitle}>Ajustes</Text>
+        </LinearGradient>
+      </Animated.View>
+
+      {/* Settings Options */}
+      <Animated.View 
+        style={[
+          styles.contentContainer,
+          { 
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }]
+          }
+        ]}
+      >
+        {/* Profile Button */}
+        <Animated.View style={{ width: '100%', marginBottom: 10 }}>
+          <TouchableOpacity
+            style={styles.settingButton}
+            onPress={() => router.push('/profile')}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
           >
-            <TouchableOpacity
-              style={styles.optionButtonContent}
-              onPress={() => router.push('/profile')}
+            <LinearGradient
+              colors={['#fc9414', '#fc9414']}
+              start={[0, 0]}
+              end={[1, 1]}
+              style={styles.gradientButton}
             >
-              <View style={styles.iconContainer}>
-                <Ionicons
-                  name="person"
-                  size={24}
-                  color={theme === 'dark' ? '#AAAAAA' : 'white'}
-                />
+              <View style={styles.buttonContent}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name="person" size={24} color="white" />
+                </View>
+                <Text style={styles.buttonText}>Mi perfil</Text>
               </View>
-              <Text style={styles.buttonText}>  Mi perfil</Text>
-            </TouchableOpacity>
-          </LinearGradient>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
 
-          <LinearGradient
-            colors={['#fc9414', "#fc9414"]}
-            start={[0, 0]}
-            end={[1, 1]}
-            style={styles.gradientButton}
+        {/* FAQ Button */}
+        <Animated.View style={{ width: '100%', marginBottom: 10 }}>
+          <TouchableOpacity
+            style={styles.settingButton}
+            onPress={handleOpenFaq}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
           >
-            <TouchableOpacity
-              style={styles.optionButtonContent}
-              onPress={() => setFaqVisible(true)}
+            <LinearGradient
+              colors={['#fc9414', '#fc9414']}
+              start={[0, 0]}
+              end={[1, 1]}
+              style={styles.gradientButton}
             >
-              <View style={styles.iconContainer}>
-                <Ionicons
-                  name="help"
-                  size={24}
-                  color={theme === 'dark' ? '#AAAAAA' : 'white'}
-                />
+              <View style={styles.buttonContent}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name="help-circle" size={24} color="white" />
+                </View>
+                <Text style={styles.buttonText}>Preguntas frecuentes</Text>
               </View>
-              <Text style={styles.buttonText}>  Preguntas frecuentes</Text>
-            </TouchableOpacity>
-          </LinearGradient>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
 
-          <LinearGradient
-            colors={['#fc9414', "#fc9414"]}
-            start={[0, 0]}
-            end={[1, 1]}
-            style={styles.gradientButton}
+        {/* Support Button */}
+        <Animated.View style={{ width: '100%', marginBottom: 10 }}>
+          <TouchableOpacity
+            style={styles.settingButton}
+            onPress={handleSupportPress}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
           >
-            <TouchableOpacity
-              style={styles.optionButtonContent}
-              onPress={handleSupportPress}
+            <LinearGradient
+              colors={['#fc9414', '#fc9414']}
+              start={[0, 0]}
+              end={[1, 1]}
+              style={styles.gradientButton}
             >
-              <View style={styles.iconContainer}>
-                <Ionicons
-                  name="build"
-                  size={24}
-                  color={theme === 'dark' ? '#AAAAAA' : 'white'}
-                />
+              <View style={styles.buttonContent}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name="build" size={24} color="white" />
+                </View>
+                <Text style={styles.buttonText}>Soporte técnico</Text>
               </View>
-              <Text style={styles.buttonText}>  Soporte</Text>
-            </TouchableOpacity>
-          </LinearGradient>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
 
-          <LinearGradient
-            colors={['#fc9414', "#fc9414"]}
-
-
-            start={[0, 0]}
-            end={[1, 1]}
-            style={styles.gradientButton}
+        {/* Logout Button */}
+        <Animated.View style={{ width: '100%' }}>
+          <TouchableOpacity
+            style={styles.settingButton}
+            onPress={() => handleLogOut()}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
           >
-            <TouchableOpacity
-              style={styles.optionButtonContent}
-              onPress={() => setLogoutVisible(true)}
+            <LinearGradient
+              colors={['#fc9414', '#fc9414']}
+              start={[0, 0]}
+              end={[1, 1]}
+              style={styles.gradientButton}
             >
-              <View style={styles.iconContainer}>
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={theme === 'dark' ? '#AAAAAA' : 'white'}
-                />
+              <View style={styles.buttonContent}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name="log-out" size={24} color="white" />
+                </View>
+                <Text style={styles.buttonText}>Cerrar sesión</Text>
               </View>
-              <Text style={styles.buttonText}>  Cerrar sesión</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        </View>
-      </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+      </Animated.View>
 
-      {/* Modal de Preguntas Frecuentes */}
+      {/* FAQ Modal */}
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={faqVisible}
-        onRequestClose={() => setFaqVisible(false)}
+        onRequestClose={handleCloseFaq}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Preguntas Frecuentes</Text>
-            <ScrollView style={styles.scrollContainer}>
+        <View style={styles.modalOverlay}>
+          <Animated.View
+            style={[
+              styles.modalContent,
+              { transform: [{ scale: modalScaleAnim }] }
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Preguntas Frecuentes</Text>
+              <TouchableOpacity onPress={handleCloseFaq} style={styles.closeIcon}>
+                <Ionicons name="close-circle" size={28} color="white" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView 
+              style={styles.scrollContainer}
+              showsVerticalScrollIndicator={false}
+            >
               {faqData.map((item, index) => (
                 <View key={index} style={styles.faqItem}>
-                  <Text style={styles.question}>{item.question}</Text>
+                  <View style={styles.questionContainer}>
+                    <Ionicons name="help-circle" size={20} color="#fc9414" style={styles.questionIcon} />
+                    <Text style={styles.question}>{item.question}</Text>
+                  </View>
                   <Text style={styles.answer}>{item.answer}</Text>
                 </View>
               ))}
             </ScrollView>
-            <TouchableOpacity
-              style={styles.closeButton1}
-              onPress={() => setFaqVisible(false)}
-            >
-              <Text style={styles.buttonText}>Cerrar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Modal de Cierre de Sesión */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={logoutVisible}
-        onRequestClose={() => setLogoutVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent1}>
-            <Text style={styles.modalTitle}>
-              ¿Estás seguro de que deseas cerrar la sesión?
-            </Text>
+            
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={() => setLogoutVisible(false)}
+              onPress={handleCloseFaq}
             >
-              <Text style={styles.buttonText}>No, volver</Text>
+              <LinearGradient
+                colors={['#fc9414', '#fc9414']}
+                start={[0, 0]}
+                end={[1, 1]}
+                style={styles.gradientCloseButton}
+              >
+                <View style={styles.closeButtonContent}>
+                  <Ionicons name="checkmark-circle" size={20} color="white" style={{ marginRight: 8 }} />
+                  <Text style={styles.closeButtonText}>Entendido</Text>
+                </View>
+              </LinearGradient>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={() => {
-                router.push('/');
-                setLogoutVisible(false);
-                Alert.alert(
-                  'Sesión cerrada',
-                  'Has cerrado sesión exitosamente.',
-                );
-              }}
-            >
-              <Text style={styles.buttonText}>Sí, salir</Text>
-            </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </View>
@@ -296,168 +429,153 @@ const faqData = [
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
     flex: 1,
-    paddingHorizontal:20,
+    backgroundColor: "#024059",
+    paddingHorizontal: 20,
+  },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderRadius: 20,
+    width: "100%",
+  },
+  appNameImage: {
+    width: 120,
+    height: 40,
+    marginHorizontal: 20,
+  },
+  animatedLogo: {
+    width: 60,
+    height: 60,
+    marginHorizontal: 20,
+  },
+  pageTitleContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 15,
+    paddingVertical: 15,
+    marginBottom: 5,
+  },
+  pageTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "white",
+    textAlign: "center",
   },
   contentContainer: {
-    width: '90%',
+    width: '100%',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 15,
     backgroundColor: "#1B8CA6",
-    borderRadius: 40,
-    paddingVertical: 20,
-    paddingHorizontal: 10,
-    marginTop:90, 
-    borderColor: "black",
-    borderWidth:0.7,
   },
-  // Header ORIGINAL sin cambios
-  headerContainer2: {
-    alignItems: 'center',
+  settingButton: {
     width: '100%',
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: 'white',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 3,
-    marginBottom: 22,
-  },
-  title2: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: 'white',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 22,
-  },
-  // Contenedor de botones
-  buttonContainer: {
-    width: '100%',
-    alignItems: 'center',
+    marginVertical: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   gradientButton: {
-    borderRadius: 10,
-    marginVertical: 10,
-    width: '100%',
-    overflow: 'hidden',
+    padding: 16,
   },
-  optionButtonContent: {
+  buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
-    borderRadius: 5,
-    
   },
   iconContainer: {
-    borderRadius: 20,
-    padding: 10,
-    marginRight: 10,
-    borderWidth: 0
+    marginRight: 15,
   },
   buttonText: {
-    color: 'black',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  // Estilos para los modales 
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: "#024059",
-    alignItems: 'center',
-    marginTop: 60,
-    marginBottom: 30,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
-    alignItems: 'center',
-  },
-  modalContent1: {
-    backgroundColor: '#F2C572',
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
-    alignItems: 'center',
-  },
-  modalTitle: {
+    color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
   },
-  closeButton1: {
-    backgroundColor: 'white',
-    padding: 10,
-    borderRadius: 10,
-    width: '80%',
-    marginBottom: 10,
-    alignItems: 'center',
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
   },
-  closeButton: {
-    backgroundColor: '#1B8CA6',
-    padding: 15,
-    borderRadius: 10,
-    width: '80%',
-    marginBottom: 10,
-    alignItems: 'center',
+  modalContent: {
+    backgroundColor: "#024059",
+    borderRadius: 16,
+    padding: 20,
+    width: "100%",
+    maxWidth: 400,
+    borderWidth: 2,
+    borderColor: "#fc9414",
+    maxHeight: "80%",
   },
-  logoutButton: {
-    backgroundColor: '#fc9414',
-    padding: 15,
-    borderRadius: 10,
-    width: '80%',
-    alignItems: 'center',
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "white",
+  },
+  closeIcon: {
+    padding: 5,
   },
   scrollContainer: {
     width: '100%',
+    marginBottom: 20,
   },
   faqItem: {
-    marginBottom: 15,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    backgroundColor: "#1B8CA6",
+    marginBottom: 12,
+    borderRadius: 10,
+    padding: 15,
+    borderLeftWidth: 3,
+    borderLeftColor: "#fc9414",
+  },
+  questionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  questionIcon: {
+    marginRight: 8,
   },
   question: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#007bff',
-    marginBottom: 5,
+    color: 'white',
+    flex: 1,
   },
   answer: {
     fontSize: 14,
-    color: '#333',
+    color: 'rgba(255, 255, 255, 0.9)',
+    paddingLeft: 28,
   },
-
-
-  appNameImage: {
-    width: 120, // Adjust as needed
-    height: 40, // Adjust as needed
-    marginHorizontal: 0,
+  closeButton: {
+    width: '100%',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
-topBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: -15,
-    backgroundColor: "#024059",
-    borderRadius: 20,
-    marginHorizontal: -10,
-    marginVertical: 5,
-    width: "100%",
+  gradientCloseButton: {
+    padding: 16,
+    borderRadius: 12,
   },
-animatedLogo: {
-    width: 60, // Adjust as needed
-    height: 60, // Adjust as needed
-    marginHorizontal: 0,
+  closeButtonContent: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-
-
+  closeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });

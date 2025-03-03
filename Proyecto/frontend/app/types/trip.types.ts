@@ -5,7 +5,7 @@ export interface Trip {
   departureDate: Date | string;
   beginDate: Date | string;
   endDate: Date | string;
-  status: string; // Add other statuses as needed
+  status: TripStatus; // Add other statuses as needed
   driverId: string;
   price: number;
   createdAt: Date | string;
