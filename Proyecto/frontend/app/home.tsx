@@ -236,6 +236,16 @@ export default function Home(): JSX.Element {
           colors={["#1B8CA6", "#0a6a80"]}
           style={[styles.optionButton, styles.wideButton]}
         />
+
+        <AnimatedButton 
+          onPress={() => router.push("/currentTrip")} 
+          delay={500} 
+          icon="car-sport" 
+          title="Viaje actual" 
+          colors={["#fc9414", "#f57c00"]} 
+          style={styles.optionButton} 
+        />
+
       </View>
     </View>
   );
