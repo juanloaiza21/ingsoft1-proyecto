@@ -14,51 +14,156 @@ import {
   Button,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Trip } from "./types/trip.types";
+import axios from "axios";
+import { ConfigVariables } from "./config/config";
+import { ApiResponse } from "./types/api-response.type";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-interface Trip {
-  id: string;
-  driverImage: string;
-  duration: string;
-  price: string;
+
+interface TravelOption {
+  "id": string,
+  "origin": string,
+  "destination": string,
+  "departureDate": string,
+  "beginDate": string,
+  "endDate": string,
+  "status": string,
+  "driverId": string,
+  "price": number,
+  "createdAt": string,
+  "updatedAt": string,
 }
 
-// Función simulada para obtener el historial de viajes desde el backend
-const fetchTrips = async (): Promise<Trip[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        {
-          id: "1",
-          driverImage: "https://via.placeholder.com/100",
-          duration: "1h 30m",
-          price: "$20",
-        },
-        {
-          id: "2",
-          driverImage: "https://via.placeholder.com/100",
-          duration: "2h 15m",
-          price: "$30",
-        },
-        {
-          id: "3",
-          driverImage: "https://via.placeholder.com/100",
-          duration: "45m",
-          price: "$15",
-        },
-      ]);
-    }, 1000);
-  });
-};
 
 export default function Historial(): JSX.Element {
 
   const { theme } = useTheme(); //para cambiar el tema
-
+  
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [access_token, setAccess_token] = useState<string>('');
+  const [refresh_token, setRefresh_token] = useState<string>('');
   const router = useRouter();
+
+    const getTokens = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      setAccess_token(accessToken ?? '');
+      setRefresh_token(refreshToken ?? '');
+    } catch (error) {
+      console.error('Error al recuperar tokens:', error);
+      return { accessToken: null, refreshToken: null };
+    }
+  };
+  useEffect(() => {
+    const loadTokens = async () => {
+      await getTokens();
+      if (access_token && refresh_token) {
+        console.log('Tokens recuperados correctamente');
+      }
+    };
+    loadTokens();
+  }, []);
+
+  
+
+  const fetchTrips = async (): Promise<Trip[]> => {
+    const trips: Trip[] = [];
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      console.log('Access token:', accessToken);
+      let user1Petition = await axios.request({
+        method: ConfigVariables.api.auth.checkJWT.method,
+        url: ConfigVariables.api.auth.checkJWT.url,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      let user:ApiResponse = user1Petition.data;
+      console.log('User:', user);
+      const petition = await axios.request({
+        method: ConfigVariables.api.historical.tripsUser.method,
+        url: ConfigVariables.api.historical.tripsUser.url+user.result.userId,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+      const data: ApiResponse = petition.data;
+      const tripsData: Trip[] = data.result;
+      tripsData.forEach((trip) => {
+        if(trip.status === 'COMPLETED')
+        trips.push(trip);
+      });
+    } catch (error) {
+      console.error("Error fetching trips", error);
+    } finally {
+      return trips;
+    }
+  };
+  
+  const handleDriverPress = async (item: Trip) => {
+    try {
+      if (!item.driverId) {
+        try {
+          await AsyncStorage.setItem('currentTravelData', JSON.stringify({ 
+            travel: item, 
+            driver: null
+          }));
+          router.navigate('./newTrip');
+        } catch (error) {
+          console.error('Error saving travel data to AsyncStorage:', error);
+        }
+      }
+      else{
+        const petition = await axios.request({
+          method: ConfigVariables.api.driver.getOne.method,
+          url: `${ConfigVariables.api.driver.getOne.url}${item.driverId}`,
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+          },
+        })
+        const driver: ApiResponse = petition.data;
+        const calf = await axios.request({
+          method: ConfigVariables.api.calification.getProm.method,
+          url: `${ConfigVariables.api.calification.getProm.url}${driver.result.id}`,
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+          },
+        })
+        const calification: ApiResponse = calf.data;
+        driver.result.calification = calification.result;
+        const petitionUser = await axios.request({
+          method: ConfigVariables.api.user.getOne.method,
+          url: `${ConfigVariables.api.user.getOne.url}${driver.result.id}`,
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+          },
+        });
+
+        const user: ApiResponse = petitionUser.data;
+
+        // Save travel and driver data to AsyncStorage
+        try {
+          await AsyncStorage.setItem('currentTravelData', JSON.stringify({ 
+            travel: item, 
+            driver: driver.result,
+            user: user.result
+          }));
+          console.log('Travel data saved to AsyncStorage');
+          router.navigate('./newTrip');
+        } catch (error) {
+          console.error('Error saving travel data to AsyncStorage:', error);
+        }
+      }
+    } catch (error) {
+      console.error( error);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -78,19 +183,16 @@ export default function Historial(): JSX.Element {
     setSelectedTrip(null);
   };
 
-  const handleDriverPress = () => {
-    // Navegar a la página driverProfile.tsx
-    router.push("/driverProfile");
-    // Opcionalmente, cerrar el modal
-    closeModal();
-  };
-
   const renderTripItem = ({ item }: { item: Trip }) => (
     <TouchableOpacity
       style={styles.tripItem}
-      onPress={() => handleTripPress(item)}
+      onPress={() => handleDriverPress(item)}
     >
-      <Text style={styles.tripText}>Viaje {item.id}</Text>
+      <Text style={styles.tripText}>Viaje: {item.id}</Text>
+      <Text>Fecha de inicio: {item.beginDate.toString()}</Text>
+      <Text>Fecha de fin: {item.endDate.toString()}</Text>
+      <Text>Precio: {item.price}</Text>
+      <Text>Estado: {item.status}</Text>
     </TouchableOpacity>
   );
 
@@ -117,43 +219,7 @@ export default function Historial(): JSX.Element {
         transparent={true}
         onRequestClose={closeModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {selectedTrip && (
-              <>
-                <TouchableOpacity
-                  onPress={handleDriverPress}
-                  style={styles.driverImageContainer}
-                >
-                  <Image
-                    source={{ uri: selectedTrip.driverImage }}
-                    style={styles.driverImage}
-                  />
-                </TouchableOpacity>
-                <View style={styles.detailsContainer}>
-                  <Text style={styles.detailText}>
-                    Duración: {selectedTrip.duration}
-                  </Text>
-                  <Text style={styles.detailText}>
-                    Precio: {selectedTrip.price}
-                  </Text>
-                </View>
 
-                <View style={{ marginBottom: 15 }}>
-                <Button
-                  title="Ver perfil del Conductor del viaje"
-                  onPress={() => {
-                    closeModal();
-                    router.push("/driverProfile");
-                  }}
-                />
-                </View>
-                <Button title="Cerrar" onPress={closeModal} color = "#c91905"/>
-          
-              </>
-            )}
-          </View>
-        </View>
       </Modal>
     </View>
   );

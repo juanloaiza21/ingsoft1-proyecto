@@ -142,6 +142,17 @@ export default function Page() {
       });
       const data: ApiResponse = validation.data;
       if (data.result.status === 'ACCEPTED') {
+        await axios.request({
+          method: ConfigVariables.api.trip.userJoinTrip.method,
+          url: ConfigVariables.api.trip.userJoinTrip.url,
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+          data:{
+            tripId: travelData.travel?.id,
+          }
+        })
+        console.log('vinculado al viaje '+travelData.travel?.id);
         Alert.alert(
           "Pago exitoso",
           "Tu pago ha sido procesado con éxito, se le notificará al conductor",

@@ -8,8 +8,13 @@ import {
   StyleSheet,
   Animated,
   Image,
+  Alert,
 } from "react-native";
+import { useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { ConfigVariables } from "./config/config";
 
 export default function PublishTravel(): JSX.Element {
   const { theme } = useTheme(); // para cambiar el tema
@@ -22,7 +27,30 @@ export default function PublishTravel(): JSX.Element {
   const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
   const [price, setPrice] = useState<string>(""); // Using string for numeric input
   const [published, setPublished] = useState<boolean>(false);
+  const [access_token, setAccess_token] = useState<string>('');
+  const [refresh_token, setRefresh_token] = useState<string>('');
+  const router = useRouter()
 
+    const getTokens = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      setAccess_token(accessToken ?? '');
+      setRefresh_token(refreshToken ?? '');
+    } catch (error) {
+      console.error('Error al recuperar tokens:', error);
+      return { accessToken: null, refreshToken: null };
+    }
+  };
+  useEffect(() => {
+    const loadTokens = async () => {
+      await getTokens();
+      if (access_token && refresh_token) {
+        console.log('Tokens recuperados correctamente');
+      }
+    };
+    loadTokens();
+  }, []);
   // Validations
   const isOriginValid = origin.trim() !== "";
   const isDestinationValid = destination.trim() !== "";
@@ -66,9 +94,27 @@ export default function PublishTravel(): JSX.Element {
     }
   };
 
-  const handlePublish = () => {
-    setPublished(true);
-    // Add any additional logic (e.g., API calls) here.
+  const handlePublish =async  () => {
+    try {
+      const petition = await axios.request({
+        method: ConfigVariables.api.trip.driverCreateTrip.method,
+        url: ConfigVariables.api.trip.driverCreateTrip.url,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+        data:{
+          origin,
+          destination,
+          date,
+          price: parseInt(price)
+        }
+      });
+      setPublished(true); 
+      console.log('Viaje publicado:', petition.data);
+    } catch (error) {
+      console.error('Error al publicar viaje:', error);
+      Alert.alert('Error', 'No se pudo publicar el viaje. Inténtalo de nuevo.');
+    }
   };
 
   // Animated value for the top bar logo (unchanged)
@@ -207,7 +253,12 @@ export default function PublishTravel(): JSX.Element {
           !isFormValid && styles.buttonDisabled,
           published && styles.buttonSuccess,
         ]}
-        onPress={handlePublish}
+        onPress={() => {
+          handlePublish();
+          setTimeout(() => {
+            router.push('..')
+          }, 1200)
+        }}
       >
         <Text style={styles.buttonText}>
           {published ? "Viaje publicado con éxito" : "Publicar"}
@@ -270,7 +321,6 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 50,
-    borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 35,
     paddingHorizontal: 10,
