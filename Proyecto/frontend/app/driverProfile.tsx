@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTheme } from "./context/themeContext";
 
 import {
@@ -11,9 +11,10 @@ import {
   Image,
   Modal,
   TextInput,
+  Animated,
 } from "react-native";
 
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 
 interface TravelOption {
   "id": string,
@@ -194,44 +195,88 @@ export default function DriverProfile() {
     setRatingComment(""); // Limpiar el comentario
   };
 
+  const logoAnim = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    // Animate the logo from off-screen right (300) to its final position (0) with a bounce effect
+    Animated.spring(logoAnim, {
+      toValue: 0,
+      friction: 4,
+      tension: 5,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: theme === "dark" ? "#2d2c24" : "white" },
-      ]}
-    >
-      <Text style={[styles.title, theme === "dark" && styles.title2]}>
-        Perfil del conductor
-      </Text>
-      <Image
-        source={require("../assets/images/Daguilastrico.jpeg")}
-        style={styles.image}
-      />
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoText}>
-          {travelData.user?.name}{"\n"}Tel: {travelData.user?.phoneNumber?.replace(/^\+57/, '')}{"\n"}runtNumber: {travelData.driver?.runtNumber}
-        </Text>
+    <View style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "#024059" }]}>
+    {/* Top Bar */}
+    <View style={styles.topBar}>
+        {/* Left: App Name Image */}
+        <Image
+          source={require("../assets/images/Nombre (2).png")} // Replace with your app name image
+          style={styles.appNameImage}
+          resizeMode="contain"
+        />
+        {/* Right: Animated Logo */}
+        <Animated.Image
+          source={
+            theme === "dark"
+              ? require("../assets/images/icon-black.png")
+              : require("../assets/images/icon-black.png")
+          }
+          style={[
+            styles.animatedLogo,
+            { transform: [{ translateX: logoAnim }] },
+          ]}
+          resizeMode="contain"
+        />
       </View>
+    <Image
+      source={require("../assets/images/Daguilastrico.jpeg")}
+      style={styles.image}
+    />
+{/* User Name */}
+<View style={styles.infoRow}>
+      <FontAwesome name="user" size={24} color="black" style={styles.icon} />
+      <Text style={styles.infoText}>{travelData.user?.name}</Text>
+    </View>
+
+    {/* Phone Number */}
+    <View style={styles.infoRow}>
+      <MaterialIcons name="phone" size={24} color="black" style={styles.icon} />
+      <Text style={[styles.infoText]}>Tel: {travelData.user?.phoneNumber?.replace(/^\+57/, '')}</Text>
+    </View>
+
+    {/* Email */}
+    <View style={styles.infoRow}>
+      <MaterialIcons name="sim-card" size={24} color="black" style={styles.icon} />
+      <Text style={[styles.infoText]}>Runt: {travelData.driver?.runtNumber}</Text>
+    </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.optionButton}
-          onPress={() => {
-            fetchCalifications();
-            router.push("/calification");
-          }}
-        >
-          <Text style={styles.buttonText}>Ver calificaciones</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.optionButton}
-          onPress={() => setModalVisibleRating(true)}
-        >
-          <Text style={styles.buttonText}>Calificar conductor</Text>
-        </TouchableOpacity>
-
+        <View style={styles.rowContainer}>
+          <TouchableOpacity
+            style={styles.optionButtonRow}
+            onPress={() => {
+              fetchCalifications();
+              router.push("/calification");
+            }}
+          >
+            <View style={styles.buttonContent}>
+            <Ionicons name="time-outline" size={24} color="white" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>Ver calificaciones</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.optionButtonRow}
+            onPress={() => setModalVisibleRating(true)}
+          >
+          <View style={styles.buttonContent}>
+              <Ionicons name="star" size={24} color="white" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>Calificar conductor</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
         {/* Modal de Calificación */}
         <Modal
           animationType="slide"
@@ -281,12 +326,20 @@ export default function DriverProfile() {
           </View>
         </Modal>
 
-        <TouchableOpacity
-          style={styles.optionButtonReport}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={styles.buttonText}>Reportar conductor</Text>
-        </TouchableOpacity>
+        {/* Single button centered below */}
+        <View style={styles.singleButtonContainer}>
+          <TouchableOpacity
+            style={styles.optionButtonReport}
+            onPress={() => setModalVisible(true)}
+          >
+            <View style={styles.buttonContent}>
+              <Ionicons name="alert-circle-outline" size={24} color="white" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>Reportar conductor</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+
 
         {/* Modal de Reporte */}
         <Modal
@@ -329,60 +382,39 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     flex: 1,
-    backgroundColor: "#f5f5f5",
-    paddingTop: 50,
+    backgroundColor: "black",
+    paddingTop: 0,
   },
-
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
+  appNameImage: {
+    width: 120,
+    height: 40,
+    marginHorizontal: 20,
   },
-
-  title2: {
-    fontSize: 26, // Un poco más grande
-    fontWeight: "bold",
-    color: "white", // Color más elegante y menos básico que el negro puro
-    marginRight: 0, // Espacio con la imagen
-    textTransform: "uppercase", // Convierte el texto en mayúsculas
-    letterSpacing: 1, // Espacia un poco las letras para un diseño más limpio
-
-    marginBottom: 22,
-    marginLeft: 15,
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: -15,
+    borderRadius: 20,
+    marginHorizontal: -10,
+    marginVertical: 5,
+    width: "100%",
+  },
+  animatedLogo: {
+    width: 60,
+    height: 60,
+    marginHorizontal: 20,
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   image: {
     width: 150,
     height: 150,
     borderRadius: 75,
     marginBottom: 20,
-    resizeMode: "cover", // Changed from "contain" to "cover" to fill the circle
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  buttonContainer: {
-    width: "100%",
-    alignItems: "center",
-  },
-  optionButton: {
-    backgroundColor: "#007bff",
-    padding: 27,
-    borderRadius: 10,
-    width: "60%",
-    alignItems: "center",
-    marginVertical: 10,
-    marginTop: 30,
-  },
-  optionButtonReport: {
-    backgroundColor: "#c91905",
-    padding: 27,
-    borderRadius: 10,
-    width: "60%",
-    alignItems: "center",
-    marginVertical: 10,
-    marginTop: 30,
+    resizeMode: "cover",
   },
   infoContainer: {
     backgroundColor: "#f0f0f0",
@@ -395,6 +427,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
+    color: "white",
+  },
+  buttonContainer: {
+    width: "100%",
+    alignItems: "center",
+    textAlign: "center",
+  },
+  rowContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginVertical: 35,
+    alignItems: "center",
+  },
+  optionButtonRow: {
+    backgroundColor: "#fc9414",
+    padding: 27,
+    borderRadius: 10,
+    width: "45%",
+    alignItems: "center",
+    textAlign: "center",
+  },
+  singleButtonContainer: {
+    width: "100%",
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    backgroundColor: "#1B8CA6",
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 5,
+  },
+  icon: {
+    marginRight: 10,
+    color: "white",
+  },
+  optionButtonReport: {
+    backgroundColor: "#c91905",
+    padding: 27,
+    borderRadius: 10,
+    width: "60%",
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  buttonIcon: {
+    marginRight: 10,
   },
   modalContainer: {
     flex: 1,
