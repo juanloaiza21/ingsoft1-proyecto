@@ -295,7 +295,7 @@ export default function Login() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Usuario o correo electrónico"
+                placeholder="Correo electrónico"
                 placeholderTextColor="#93A9B1"
                 value={username}
                 onChangeText={setUsername}

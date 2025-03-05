@@ -7,12 +7,18 @@ import {
   Text, 
   StyleSheet, 
   Dimensions, 
-  Platform 
+  Platform,
+  Modal 
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTheme } from "./context/themeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Trip } from "./types/trip.types";
+import axios from "axios";
+import { ConfigVariables } from "./config/config";
+import { ApiResponse } from "./types/api-response.type";
 
 // AnimatedButton Component with enhanced animation
 const AnimatedButton = ({
@@ -106,11 +112,84 @@ const AnimatedButton = ({
   );
 };
 
-export default function Home(): JSX.Element {
+export default function Home() {
   const router = useRouter();
   const { theme } = useTheme();
-  const windowWidth = Dimensions.get('window').width;
+  const [access_token, setAccess_token] = useState<string>('');
+  const [refresh_token, setRefresh_token] = useState<string>('');
+  const [noTripsModalVisible, setNoTripsModalVisible] = useState<boolean>(false);
+
+  const getTokens = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      setAccess_token(accessToken ?? '');
+      setRefresh_token(refreshToken ?? '');
+      return { accessToken, refreshToken };
+    } catch (error) {
+      console.error('Error al recuperar tokens:', error);
+      return { accessToken: null, refreshToken: null };
+    }
+  };
   
+  useEffect(() => {
+    const loadTokens = async () => {
+      await getTokens();
+      if (access_token && refresh_token) {
+        console.log('Tokens recuperados correctamente');
+      }
+    };
+    loadTokens();
+  }, []);
+
+  const fetchTrips = async (): Promise<Trip[]> => {
+    const trips: Trip[] = [];
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      console.log('Access token:', accessToken);
+      
+      let user1Petition = await axios.request({
+        method: ConfigVariables.api.auth.checkJWT.method,
+        url: ConfigVariables.api.auth.checkJWT.url,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      let user:ApiResponse = user1Petition.data;
+      console.log('User:', user);
+      
+      const petition = await axios.request({
+        method: ConfigVariables.api.historical.tripsUser.method,
+        url: ConfigVariables.api.historical.tripsUser.url+user.result.userId,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      
+      const data: ApiResponse = petition.data;
+      const tripsData: Trip[] = data.result;
+      
+      tripsData.forEach((trip) => {
+        if(trip.status === 'ONGOING')
+        trips.push(trip);
+      });
+    } catch (error) {
+      console.error("Error fetching trips", error);
+    } finally {
+      return trips;
+    }
+  };
+
+  const handleViajeActual = async () => {
+    const trips = await fetchTrips();
+    if (trips.length > 0) {
+      router.push("/currentTrip");
+    } else {
+      setNoTripsModalVisible(true);
+    }
+  };
+
   // Animation references
   const logoAnim = useRef(new Animated.Value(300)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -208,44 +287,111 @@ export default function Home(): JSX.Element {
 
       {/* Main Options */}
       <View style={styles.optionsContainer}>
+        {/* First row - two main actions with enhanced styling */}
         <View style={styles.optionsRow}>
           <AnimatedButton 
-            onPress={() => router.push("/solicitudViaje")} 
-            delay={200}
-            icon="car-sport"
-            title="Solicitar un viaje"
-            colors={["#fc9414", "#f57c00"]}
-            style={styles.optionButton}
+        onPress={() => router.push("/solicitudViaje")} 
+        delay={200}
+        icon="car-sport"
+        title="Solicitar viaje"
+        colors={["#fc9414", "#f57c00"]}
+        style={styles.optionButton}
           />
           
           <AnimatedButton 
-            onPress={() => router.push("/publishTravel")} 
-            delay={400}
-            icon="create"
-            title="Publicar un viaje"
-            colors={["#11ac28", "#0a8a1f"]}
-            style={styles.optionButton}
+        onPress={() => router.push("/publishTravel")} 
+        delay={300}
+        icon="create"
+        title="Publicar viaje"
+        colors={["#11ac28", "#0a8a1f"]}
+        style={styles.optionButton}
           />
         </View>
 
-        <AnimatedButton
-          onPress={() => router.push("/agreedTrips")}
-          delay={600}
-          icon="calendar"
-          title="Viajes programados"
-          colors={["#1B8CA6", "#0a6a80"]}
-          style={[styles.optionButton, styles.wideButton]}
-        />
+        {/* Second row - remaining actions with consistent styling */}
+        <View style={styles.optionsRow}>
+          <AnimatedButton
+        onPress={() => router.push("/agreedTrips")}
+        delay={400}
+        icon="calendar"
+        title="Viajes programados"
+        colors={["#1B8CA6", "#0a6a80"]}
+        style={styles.optionButton}
+          />
 
-        <AnimatedButton 
-          onPress={() => router.push("/currentTrip")} 
-          delay={500} 
-          icon="car-sport" 
-          title="Viaje actual" 
-          colors={["#fc9414", "#f57c00"]} 
-          style={styles.optionButton} 
-        />
+          <AnimatedButton 
+        onPress={() => handleViajeActual()} 
+        delay={500} 
+        icon="navigate-circle" 
+        title="Viaje actual" 
+        colors={["#9c27b0", "#7b1fa2"]} 
+        style={styles.optionButton} 
+          />
+        </View>
+        {/* Modal for no current trips */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={noTripsModalVisible}
+          onRequestClose={() => setNoTripsModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <LinearGradient
+                colors={["#1B8CA6", "#0a6a80"]}
+                start={[0, 0]}
+                end={[1, 1]}
+                style={styles.modalGradient}
+              >
+                <Ionicons name="alert-circle" size={48} color="white" style={styles.modalIcon} />
+                <Text style={styles.modalTitle}>No hay viajes en curso</Text>
+                <Text style={styles.modalText}>Actualmente no tienes ningún viaje activo.</Text>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={() => setNoTripsModalVisible(false)}
+                >
+                  <Text style={styles.modalButtonText}>Entendido</Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            </View>
+          </View>
+        </Modal>
 
+
+        {/* Footer promotional card with subtle animation */}
+        <Animated.View 
+          style={{
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+        borderRadius: 16,
+        overflow: 'hidden',
+        marginBottom: 20,
+        marginTop: -15 // Added negative margin to move it up
+          }}
+        >
+          <LinearGradient
+        colors={["rgba(27,140,166,0.8)", "rgba(10,106,128,0.9)"]}
+        start={[0, 0]}
+        end={[1, 1]}
+        style={{
+          padding: 15,
+          borderRadius: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}
+          >
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
+            ¡Viaja seguro con Owheels!
+          </Text>
+          <Text style={{ color: 'white', opacity: 0.9, marginTop: 4, fontSize: 12 }}>
+            Los mejores viajes al mejor precio
+          </Text>
+        </View>
+        <Ionicons name="shield-checkmark" size={28} color="white" />
+          </LinearGradient>
+        </Animated.View>
       </View>
     </View>
   );
@@ -355,5 +501,59 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     textAlign: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    width: '85%',
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  modalGradient: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalIcon: {
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    color: 'white',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalButton: {
+    backgroundColor: 'white',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+  },
+  modalButtonText: {
+    color: '#1B8CA6',
+    fontWeight: 'bold',
+    fontSize: 16,
   }
 });

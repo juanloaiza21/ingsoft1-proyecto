@@ -1,54 +1,91 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Alert, 
+  Image, 
+  Dimensions,
+  Platform,
+  Animated
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from "./context/themeContext";
 import { ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-export default function Page() {
+export default function CurrentTrip() {
   const { theme } = useTheme();
   const router = useRouter();
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [progress, setProgress] = useState(0);
   const [tripStarted, setTripStarted] = useState(false);
   const intervalRef = useRef<null | NodeJS.Timeout>(null);
+  
+  // Animation references
+  const logoAnim = useRef(new Animated.Value(300)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  
+  // Run animations on component mount
+  useEffect(() => {
+    // Animate the logo sliding in
+    Animated.spring(logoAnim, {
+      toValue: 0,
+      friction: 4,
+      tension: 5,
+      useNativeDriver: true,
+    }).start();
+    
+    // Fade in content
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+    
+    // Scale content up
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 6,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
-  // Extraer el tiempo estimado del texto
-  const extractEstimatedTime = () => {
-    // En un caso real, esto debería extraerse de los datos del viaje
-    const timeText = "35 min"; // Extraído del componente actual
-    const match = timeText.match(/\d+/);
-    return match ? parseInt(match[0]) : 35; // Valor por defecto si no hay coincidencia
-  };
-
-  const estimatedTimeInMinutes = extractEstimatedTime();
+  // Extraer el tiempo estimado
+  const estimatedTimeInMinutes = 35; // Using static value for now
 
   const startProgress = () => {
-    if (!tripStarted) {
-      setTripStarted(true);
-      
-      // Convertir minutos a milisegundos
-      const totalDuration = estimatedTimeInMinutes * 60 * 1000;
-      const updateInterval = 1000; // Actualizar cada segundo
-      
-      // Calcular cuánto debe aumentar el progreso cada segundo
-      const incrementPerInterval = (updateInterval / totalDuration) * 100;
-      
-      // Iniciar el intervalo para actualizar el progreso
-      intervalRef.current = setInterval(() => {
-        setProgress(prevProgress => {
-          const newProgress = prevProgress + incrementPerInterval;
-          if (newProgress >= 100) {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-              intervalRef.current = null;
-            }
-            return 100;
-          }
-          return newProgress;
-        });
-      }, updateInterval);
+    // Clear any existing interval first to prevent multiple intervals running simultaneously
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
+    
+    setTripStarted(true);
+    setProgress(0); // Reset progress to 0
+    
+    // Calculate how much to increment per second
+    const incrementPerSecond = 100 / (estimatedTimeInMinutes * 60);
+    
+    // Update progress every second
+    intervalRef.current = setInterval(() => {
+      setProgress(prevProgress => {
+        const newProgress = prevProgress + incrementPerSecond;
+        // If we've reached 100%, clear the interval
+        if (newProgress >= 100) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          return 100;
+        }
+        return newProgress;
+      });
+    }, 1000); // Update every 1 second
   };
 
   // Limpiar el intervalo cuando se desmonte el componente
@@ -80,226 +117,589 @@ export default function Page() {
     setShowCancelConfirm(false);
   };
 
+  // Create a component to animate list items
+  const AnimatedCard = ({ delay, children, style }) => {
+    const itemFadeAnim = useRef(new Animated.Value(0)).current;
+    const itemScaleAnim = useRef(new Animated.Value(0.9)).current;
+    
+    useEffect(() => {
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.parallel([
+          Animated.timing(itemFadeAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.spring(itemScaleAnim, {
+            toValue: 1,
+            friction: 8,
+            useNativeDriver: true,
+          })
+        ])
+      ]).start();
+    }, []);
+    
+    return (
+      <Animated.View 
+        style={[
+          style,
+          {
+            opacity: itemFadeAnim,
+            transform: [{ scale: itemScaleAnim }]
+          }
+        ]}
+      >
+        {children}
+      </Animated.View>
+    );
+  };
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme === "dark" ? "#2d2c24" : "#024059" }]}>
-      <View style={styles.header}>
-        <Ionicons name="car" size={24} color={theme === "dark" ? "#AAAAAA" : "white"} />
-        <Text style={[styles.headerText, theme === "dark" && styles.headerText2]}>VIAJE ACTUAL</Text>
+    <View style={[
+      styles.container, 
+      { backgroundColor: theme === "dark" ? "#2d2c24" : "#024059" }
+    ]}>
+      {/* Top Bar - Similar to home.tsx */}
+      <View style={styles.topBar}>
+        {/* Left: App Name Image */}
+        <Image
+          source={require("../assets/images/Nombre (2).png")}
+          style={styles.appNameImage}
+          resizeMode="contain"
+        />
+        {/* Right: Animated Logo */}
+        <Animated.Image
+          source={
+            theme === "dark"
+              ? require("../assets/images/icon-black.png")
+              : require("../assets/images/icon-black.png")
+          }
+          style={[
+            styles.animatedLogo,
+            { transform: [{ translateX: logoAnim }] },
+          ]}
+          resizeMode="contain"
+        />
       </View>
 
-      <View style={styles.driverCard}>
-        <View style={styles.driverIcon}>
-          <Ionicons name="person" size={40} color="white" />
-        </View>
-        <View style={styles.driverInfo}>
-          <Text style={styles.driverName}>Juan Pérez</Text>
-          <Text style={styles.carInfo}>Toyota Corolla • ABC-123</Text>
-          <View style={styles.ratingContainer}>
-            <Ionicons name="star" size={20} color="#FFD700" />
-            <Text style={styles.rating}>4.8</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.meetingPoint}>
-        <Text style={styles.meetingPointTitle}>Punto de encuentro:</Text>
-        <Text style={styles.meetingPointValue}>Detrás del CYT</Text>
-      </View>
-      <View style={styles.meetingPoint2}>
-        <Text style={styles.meetingPointTitle}>Destino:</Text>
-        <Text style={styles.meetingPointValue}>Centro comercial Titán plaza</Text>
-      </View>
-
-      <TouchableOpacity style={styles.button} onPress={() => router.push("/driverProfile")}>
-        <Text style={styles.buttonText}>Ver perfil</Text>
-      </TouchableOpacity>
-
-      {/* Reemplazamos el botón "Contactar" por la barra de progreso */}
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressText}>Progreso del viaje</Text>
-        <View style={styles.progressBarContainer}>
-          <View style={[styles.progressBar, { width: `${progress}%` }]} />
-        </View>
-        {!tripStarted ? (
-          <TouchableOpacity onPress={startProgress} style={styles.startButton}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View 
+          style={[
+            styles.titleContainer, 
+            { 
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }]
+            }
+          ]}
+        >
+          <LinearGradient
+            colors={["#9c27b0", "#7b1fa2"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={styles.titleGradient}
+          >
+            <Ionicons name="navigate-circle" size={28} color="white" style={{ marginRight: 10 }} />
+            <Text style={styles.title}>VIAJE ACTUAL</Text>
+          </LinearGradient>
+        </Animated.View>
+        
+        {/* Driver Card */}
+        <AnimatedCard delay={100} style={styles.cardContainer}>
+          <LinearGradient
+            colors={["#1B8CA6", "#0a6a80"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={styles.driverCard}
+          >
+            <View style={styles.driverHeader}>
+              <View style={styles.driverIconContainer}>
+                <Ionicons name="person" size={40} color="white" />
+              </View>
+              <View style={styles.driverInfo}>
+                <Text style={styles.driverName}>Juan Pérez</Text>
+                <View style={styles.carInfoContainer}>
+                  <Ionicons name="car-sport" size={16} color="rgba(255,255,255,0.8)" style={{marginRight: 6}} />
+                  <Text style={styles.carInfo}>Toyota Corolla • ABC-123</Text>
+                </View>
+                  <View style={styles.ratingContainer}>
+                    <Ionicons name="star" size={16} color="#FFD700" />
+                    <Text style={styles.rating}>4.8</Text>
+                  </View>
+                </View>
+              </View>
+            </LinearGradient>
+            
+            <TouchableOpacity 
+              style={styles.profileButton} 
+              onPress={() => router.push("/driverProfile")}
+            >
+              <Ionicons name="person-circle-outline" size={16} color="white" style={{marginRight: 6}} />
+              <Text style={styles.profileButtonText}>Ver perfil</Text>
+            </TouchableOpacity>
+        </AnimatedCard>
+        
+        {/* Trip Route Info */}
+        <AnimatedCard delay={200} style={styles.cardContainer}>
+          <LinearGradient
+            colors={["#fc9414", "#f57c00"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={styles.routeCard}
+          >
+            <View style={styles.routePoint}>
+              <View style={styles.routeIconContainer}>
+                <View style={styles.routePointDot} />
+                <View style={styles.routeLine} />
+              </View>
+              <View style={styles.routeInfo}>
+                <Text style={styles.routeLabel}>Origen</Text>
+                <Text style={styles.routeValue}>Detrás del CYT</Text>
+              </View>
+            </View>
+            
+            <View style={styles.routePoint}>
+              <View style={styles.routeIconContainer}>
+                <View style={styles.routePointSquare} />
+              </View>
+              <View style={styles.routeInfo}>
+                <Text style={styles.routeLabel}>Destino</Text>
+                <Text style={styles.routeValue}>Centro comercial Titán plaza</Text>
+              </View>
+            </View>
+          </LinearGradient>
+        </AnimatedCard>
+        
+        {/* Progress Card */}
+        <AnimatedCard delay={300} style={styles.cardContainer}>
+          <LinearGradient
+            colors={["#11ac28", "#0a8a1f"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={styles.progressContainer}
+          >
+            <Text style={styles.progressTitle}>Progreso del viaje</Text>
+            
+            <View style={styles.progressBarContainer}>
+              <Animated.View 
+          style={[
+            styles.progressBar, 
+            { width: `${progress}%` }
+          ]} 
+              />
+            </View>
+            
+            <View style={styles.progressDetailsContainer}>
+              {!tripStarted ? (
+          <TouchableOpacity 
+            onPress={startProgress} 
+            style={styles.startButton}
+          >
+            <Ionicons name="play-circle" size={20} color="white" style={{marginRight: 8}} />
             <Text style={styles.startButtonText}>Iniciar viaje</Text>
           </TouchableOpacity>
-        ) : (
-          <Text style={styles.progressPercentText}>{Math.round(progress)}%</Text>
-        )}
-      </View>
+              ) : (
+          <View style={styles.progressStats}>
+            <Text style={styles.progressPercentText}>{Math.round(progress)}% completado</Text>
+            <Text style={styles.progressEstimate}>
+              Tiempo restante: ~{Math.ceil(estimatedTimeInMinutes * (1 - progress/100))} min
+            </Text>
+          </View>
+              )}
+            </View>
+          </LinearGradient>
+        </AnimatedCard>
+        
+        {/* Trip Details Card */}
+        <AnimatedCard delay={400} style={styles.cardContainer}>
+          <LinearGradient
+            colors={["#1B8CA6", "#0a6a80"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={styles.tripInfoContainer}
+          >
+            <Text style={styles.sectionTitle}>Detalles del viaje</Text>
+            
+            <View style={styles.tripDetailGrid}>
+              <View style={styles.infoItem}>
+              <Ionicons name="calendar-outline" size={24} color="rgba(255,255,255,0.9)" />
+              <View style={{marginLeft: 12, flex: 1}}>
+                <Text style={styles.infoLabel}>Fecha y hora</Text>
+                <Text style={styles.infoText}>28/02/24 a las 16:45</Text>
+              </View>
+              </View>
 
-      <TouchableOpacity style={styles.buttonRed} onPress={() => router.push('/finishedTrip')}>
-        <Text style={styles.buttonText}>Finalizar Viaje</Text>
-      </TouchableOpacity>
+              <View style={styles.infoItem}>
+                <Ionicons name="time-outline" size={24} color="rgba(255,255,255,0.9)" />
+                <View>
+                  <Text style={styles.infoLabel}>Tiempo estimado</Text>
+                  <Text style={styles.infoText}>{estimatedTimeInMinutes} min</Text>
+                </View>
+              </View>
 
-      <View style={styles.tripInfoContainer}>
-        <View style={styles.infoItem}>
-          <Ionicons name="calendar-outline" size={24} color="white" />
-          <Text style={styles.infoText}>Fecha y hora: 28/02/24 a las 16:45</Text>
-        </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="cash-outline" size={24} color="rgba(255,255,255,0.9)" />
+                <View>
+                  <Text style={styles.infoLabel}>Costo total</Text>
+                  <Text style={styles.infoText}>$14.000 COP</Text>
+                </View>
+              </View>
 
-        <View style={styles.infoItem}>
-          <Ionicons name="time-outline" size={24} color="white" />
-          <Text style={styles.infoText}>Tiempo estimado: {estimatedTimeInMinutes} min</Text>
-        </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="location-outline" size={24} color="rgba(255,255,255,0.9)" />
+                <View>
+                  <Text style={styles.infoLabel}>Distancia</Text>
+                  <Text style={styles.infoText}>5.2 km</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
+        </AnimatedCard>
+        
+        {/* Action Buttons */}
+          <AnimatedCard delay={500} style={styles.actionButtonsContainer}>
+            <TouchableOpacity 
+              style={styles.finishButton} 
+              onPress={() => router.push('/finishedTrip')}
+            >
+              <LinearGradient
+                colors={["#11ac28", "#0a8a1f"]}
+                start={[0, 0]}
+                end={[1, 1]}
+                style={styles.gradientButton}
+              >
+                <Ionicons name="checkmark-circle" size={24} color="white" style={{marginRight: 8}} />
+                <Text style={styles.buttonText}>Finalizar Viaje</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.cancelButton} 
+              onPress={handleCancel}
+            >
+              <LinearGradient
+                colors={["#e53935", "#c62828"]}
+                start={[0, 0]}
+                end={[1, 1]}
+                style={styles.gradientButton}
+              >
+                <Ionicons name="close-circle" size={24} color="white" style={{marginRight: 8}} />
+                <Text style={styles.buttonText}>Cancelar Viaje</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </AnimatedCard>
+      </ScrollView>
 
-        <View style={styles.infoItem}>
-          <Ionicons name="cash-outline" size={24} color="white" />
-          <Text style={styles.infoText}>Costo total: $14.000</Text>
-        </View>
-
-        <View style={styles.infoItem}>
-          <Ionicons name="location-outline" size={24} color="white" />
-          <Text style={styles.infoText}>Distancia: 5.2 km</Text>
-        </View>
-      </View>
-
+      {/* Cancel Confirmation Modal */}
       {showCancelConfirm && (
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <Animated.View 
+            style={[
+              styles.modalContent,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }]
+              }
+            ]}
+          >
+            <Ionicons name="warning" size={32} color="#e53935" style={styles.modalIcon} />
             <Text style={styles.modalTitle}>Cancelar Viaje</Text>
-            <Text style={styles.modalText}>¿Estás seguro que deseas cancelar el viaje?</Text>
+            <Text style={styles.modalText}>¿Estás seguro que deseas cancelar el viaje actual?</Text>
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={dismissCancel}>
-                <Text style={styles.cancelButtonText}>No</Text>
+              <TouchableOpacity style={styles.modalCancelButton} onPress={dismissCancel}>
+                <Text style={styles.modalCancelButtonText}>No, continuar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmButton} onPress={confirmCancel}>
-                <Text style={styles.confirmButtonText}>Sí, cancelar</Text>
+              <TouchableOpacity style={styles.modalConfirmButton} onPress={confirmCancel}>
+                <Text style={styles.modalConfirmButtonText}>Sí, cancelar</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         </View>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
-    padding: 16,
-    paddingBottom: 80, // Añadir espacio para la barra de navegación
+    backgroundColor: '#024059',
   },
-  header: {
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  appNameImage: {
+    width: 120,
+    height: 40,
+  },
+  animatedLogo: {
+    width: 60,
+    height: 60,
+  },
+  titleContainer: {
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  titleGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 0,
-    marginBottom: 5,
+    padding: 16,
+    borderRadius: 12,
   },
-  headerText: {
+  title: {
     fontSize: 22,
-    fontWeight: 'bold',
-    marginLeft: 8,
+    fontWeight: "bold",
     color: "white",
   },
-  headerText2: {
-    color: "white",
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginLeft: 8,
+  cardContainer: {
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   driverCard: {
-    backgroundColor: '#1B8CA6',
-    borderRadius: 12,
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    borderRadius: 12,
   },
-  driverIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  driverHeader: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  driverIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   driverInfo: {
     marginLeft: 16,
     flex: 1,
+    justifyContent: 'center',
   },
   driverName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color:"white",
+    color: 'white',
+    marginBottom: 4,
+  },
+  carInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
   },
   carInfo: {
-    marginVertical: 4,
-    color:"white",
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 14,
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 4,
   },
   rating: {
-    marginLeft: 4,
+    marginLeft: 6,
+    color: 'white',
     fontWeight: 'bold',
-    color:"white",
+    fontSize: 14,
   },
-  meetingPoint: {
-    backgroundColor: '#1B8CA6',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 3, // Reducir de 5 a 3
+  profileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignSelf: 'flex-start',
+    marginTop: 8,
   },
-  meetingPoint2: {
-    backgroundColor: '#1B8CA6',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 6, // Reducir de 10 a 6
+  profileButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
   },
-  meetingPointTitle: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: "white",
+  routeCard: {
+    padding: 16,
+    borderRadius: 12,
   },
-  meetingPointValue: {
-    fontSize: 16,
+  routePoint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  routeIconContainer: {
+    width: 24,
+    alignItems: 'center',
+  },
+  routePointDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'white',
+  },
+  routeLine: {
+    width: 2,
+    height: 30,
+    backgroundColor: 'white',
     marginTop: 4,
-    color: "white",
+    marginBottom: 4,
   },
-  button: {
-    backgroundColor: '#fc9414',
-    borderRadius: 8,
-    padding: 12, // Reducir de 16 a 12
-    alignItems: 'center',
-    marginBottom: 4, // Reducir de 6 a 4
+  routePointSquare: {
+    width: 12,
+    height: 12,
+    backgroundColor: 'white',
+    borderRadius: 2,
   },
-  buttonRed: {
-    backgroundColor: '#28a745',
-    borderRadius: 8,
-    padding: 12, // Reducir de 16 a 12
+  routeInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  routeLabel: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  routeValue: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  progressContainer: {
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 6, // Reducir de 10 a 6
+  },
+  progressTitle: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginBottom: 16,
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: 'white',
+    borderRadius: 8,
+  },
+  progressDetailsContainer: {
+    width: '100%',
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  startButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+  },
+  startButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  progressStats: {
+    alignItems: 'center',
+  },
+  progressPercentText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  progressEstimate: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  tripInfoContainer: {
+    padding: 16,
+    borderRadius: 12,
+  },
+  sectionTitle: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginBottom: 16,
+  },
+  tripDetailGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -8,
+  },
+  infoItem: {
+    width: '50%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    marginBottom: 16,
+  },
+  infoLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  infoText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  actionButtonsContainer: {
+    marginTop: 8,
+  },
+  finishButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  cancelButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  gradientButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
   },
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
-  },
-  tripInfoContainer: {
-    backgroundColor: '#1B8CA6',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 0,
-    marginBottom: 20, // Añadir margen inferior para separación
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  infoText: {
-    marginLeft: 12,
-    fontSize: 16,
-    color: 'white',
   },
   modalOverlay: {
     position: 'absolute',
@@ -307,96 +707,59 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
   },
   modalContent: {
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 24,
     width: '80%',
+    alignItems: 'center',
   },
-  modalContentRed: {
-    backgroundColor: 'red',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
+  modalIcon: {
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 12,
+    color: '#333',
   },
   modalText: {
     fontSize: 16,
-    marginBottom: 20,
+    marginBottom: 24,
+    textAlign: 'center',
+    color: '#666',
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    width: '100%',
   },
-  cancelButton: {
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+  modalCancelButton: {
     flex: 1,
+    backgroundColor: '#f0f0f0',
+    paddingVertical: 12,
+    borderRadius: 8,
     marginRight: 8,
     alignItems: 'center',
   },
-  cancelButtonText: {
+  modalCancelButtonText: {
     fontWeight: 'bold',
+    color: '#666',
   },
-  confirmButton: {
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: '#0088FF',
+  modalConfirmButton: {
     flex: 1,
+    backgroundColor: '#e53935',
+    paddingVertical: 12,
+    borderRadius: 8,
     marginLeft: 8,
     alignItems: 'center',
   },
-  confirmButtonText: {
+  modalConfirmButtonText: {
     color: 'white',
     fontWeight: 'bold',
-  },
-  // Nuevos estilos para la barra de progreso
-  progressContainer: {
-    backgroundColor: '#1B8CA6',
-    borderRadius: 8,
-    padding: 12, // Reducir de 16 a 12
-    alignItems: 'center',
-    marginBottom: 4, // Reducir de 6 a 4
-  },
-  progressText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  progressBarContainer: {
-    width: '100%',
-    height: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#4cd964', // Color verde similar a la imagen
-  },
-  startButton: {
-    marginTop: 8,
-    padding: 6,
-  },
-  startButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  progressPercentText: {
-    color: 'white',
-    fontWeight: 'bold',
-    marginTop: 8,
-    fontSize: 16,
   },
 });

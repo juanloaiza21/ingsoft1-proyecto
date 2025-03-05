@@ -240,6 +240,7 @@ export default function PublishTravel(): JSX.Element {
     if (!isFormValid) return;
     
     try {
+    console.log('Publicando viaje...');
       const petition = await axios.request({
         method: ConfigVariables.api.trip.driverCreateTrip.method,
         url: ConfigVariables.api.trip.driverCreateTrip.url,
@@ -253,13 +254,12 @@ export default function PublishTravel(): JSX.Element {
           price: parseInt(price)
         }
       });
-      
       setPublished(true);
       console.log('Viaje publicado:', petition.data);
       
     } catch (error) {
-      console.error('Error al publicar viaje:', error);
-      Alert.alert('Error', 'No se pudo publicar el viaje. Inténtalo de nuevo.');
+      Alert.alert('Solo conductores pueden crear viajes', 'Conviertete en conductor desde la sección de ajustes');
+      router.push('..');
     }
   };
 
@@ -492,7 +492,7 @@ export default function PublishTravel(): JSX.Element {
               </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
-
+          
           {/* Success Animation */}
           {published && (
             <Animated.View 
